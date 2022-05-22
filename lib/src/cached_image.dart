@@ -1,13 +1,15 @@
 import 'dart:typed_data';
 
+import 'package:hive/hive.dart';
+
 class CachedImage {
-  final String? localPath;
+  final String localPath;
   final String uri;
   final int? cachedAt;
   final int modifiedAt;
   final Uint8List? rawData;
   CachedImage({
-    this.localPath,
+    required this.localPath,
     required this.uri,
     this.cachedAt,
     required this.modifiedAt,
@@ -74,5 +76,21 @@ class CachedImage {
   @override
   String toString() {
     return 'CachedImage(localPath: $localPath, uri: $uri, cachedAt: $cachedAt, modifiedAt: $modifiedAt, rawData: $rawData)';
+  }
+}
+
+class CachedImageAdapter extends TypeAdapter<CachedImage> {
+  @override
+  CachedImage read(BinaryReader reader) {
+    return CachedImage.fromMap(reader.read() as Map<String, dynamic>);
+  }
+
+  @override
+  // TODO: implement typeId
+  int get typeId => 0;
+
+  @override
+  void write(BinaryWriter writer, CachedImage obj) {
+    writer.write(obj.toMap());
   }
 }
