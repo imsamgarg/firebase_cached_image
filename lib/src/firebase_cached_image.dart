@@ -1,11 +1,4 @@
-import 'package:firebase_cached_image/src/cache_manager/cache_manager.dart'
-    if (dart.library.html) 'package:firebase_cached_image/src/cache_manager/web_cache_manager.dart'
-    if (dart.library.io) 'package:firebase_cached_image/src/cache_manager/mobile_cache_manager.dart';
-import 'package:firebase_cached_image/src/cache_settings.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
-
-part 'image_provider.dart';
+part of firebase_cached_image;
 
 class FirebaseCachedImage {
   static late final FirebaseCachedImage instance;

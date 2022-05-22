@@ -1,4 +1,4 @@
-part of 'firebase_cached_image.dart';
+part of firebase_cached_image;
 
 class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   @override
