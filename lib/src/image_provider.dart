@@ -1,4 +1,5 @@
-part of firebase_cached_image;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   @override

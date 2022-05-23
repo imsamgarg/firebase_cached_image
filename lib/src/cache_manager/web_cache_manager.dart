@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:firebase_cached_image/src/cache_manager/cache_manager.dart';
+import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart';
 import 'package:firebase_cached_image/src/cached_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:hive/hive.dart';

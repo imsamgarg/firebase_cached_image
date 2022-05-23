@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:firebase_cached_image/src/cache_manager/cache_manager.dart';
+import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart';
 import 'package:firebase_cached_image/src/cached_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:hive/hive.dart';
@@ -10,14 +10,29 @@ import 'package:path_provider/path_provider.dart';
 
 const _kImageCacheDir = "flutter_cached_image";
 
-class CacheManager extends BaseCacheManager {
-  late final String _appDir;
+class CacheSettings {
+  final bool shouldCache;
+  final CacheRefreshStrategy cacheRefreshStrategy;
 
+  CacheSettings({
+    this.shouldCache = true,
+    this.cacheRefreshStrategy = CacheRefreshStrategy.byMetadata,
+  });
+}
+
+enum CacheRefreshStrategy { byMetadata, never }
+
+enum CacheOptions { server, cacheAndServer, cacheAndServerByMetadata }
+
+class CacheManager extends BaseCacheManager {
+  static String? _appDir;
   late final Box<CachedImage> _box;
 
   @override
   Future<BaseCacheManager> init() async {
-    _appDir = await _getCacheDir();
+    if (_appDir != null) {
+      _appDir = await _getCacheDir();
+    }
 
     Hive
       ..init(_appDir)
@@ -27,7 +42,7 @@ class CacheManager extends BaseCacheManager {
     return this;
   }
 
-  Future<String> _getCacheDir() async {
+  static Future<String> _getCacheDir() async {
     final _dir = await getApplicationDocumentsDirectory();
     return join(_dir.path, _kImageCacheDir);
   }
@@ -63,7 +78,7 @@ class CacheManager extends BaseCacheManager {
   }
 
   String _saveDataToDisk(Uint8List? data, Reference ref) {
-    final path = join(_appDir, ref.fullPath);
+    final path = join(_appDir!, ref.fullPath);
     File(path).writeAsBytesSync(data!);
     return path;
   }
@@ -72,7 +87,7 @@ class CacheManager extends BaseCacheManager {
   Future<void> clearCache() async {
     await _box.clear();
     await _box.flush();
-    return Directory(_appDir).deleteSync();
+    return Directory(_appDir!).deleteSync();
   }
 
   @override

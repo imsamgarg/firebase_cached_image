@@ -4,6 +4,9 @@ import 'package:firebase_cached_image/src/cache_settings.dart';
 import 'package:firebase_cached_image/src/cached_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
+export 'package:firebase_cached_image/src/cache_manager/mobile_cache_manager.dart'
+    if (dart.library.html) 'package:firebase_cached_image/src/cache_manager/web_cache_manager.dart';
+
 const kImageCacheBox = "images_box";
 
 abstract class BaseCacheManager {
@@ -87,10 +90,4 @@ abstract class BaseCacheManager {
   Future<void> clearCache();
 
   Future<void> deleteFromCache(Uri uri);
-}
-
-//Stub Class
-class CacheManager extends BaseCacheManager {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
