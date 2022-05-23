@@ -3,16 +3,16 @@ import 'dart:typed_data';
 import 'package:firebase_cached_image/src/cache_settings.dart';
 import 'package:firebase_cached_image/src/cached_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:hive/hive.dart';
 
 const kImageCacheBox = "images_box";
 
 abstract class BaseCacheManager {
-  late final Box<CachedImage> box;
-
   Future<BaseCacheManager> init();
 
   Future dispose();
+
+  Future<CachedImage?> getCachedImageModel(String key);
+  Future<void> saveCachedImageModel(String key, CachedImage image);
 
   Future<Uint8List?> get(
     Uri uri, {
@@ -21,13 +21,13 @@ abstract class BaseCacheManager {
     required CacheRefreshStrategy refreshStrategy,
   }) async {
     final _key = uri.toString();
-    final image = box.get(_key);
+    final image = await getCachedImageModel(_key);
     if (image == null) {
       return getFromServer(uri, ref: ref, shouldCache: shouldCache);
     }
 
     final localPath = image.uri;
-    final cachedData = getFromCache(localPath);
+    final cachedData = await getFromCache(localPath);
     if (cachedData == null) {
       await getFromServer(uri, ref: ref, shouldCache: shouldCache);
     }
@@ -45,7 +45,7 @@ abstract class BaseCacheManager {
     required Reference ref,
     required bool shouldCache,
   }) async {
-    final imageModel = box.get(uri.toString());
+    final imageModel = await getCachedImageModel(uri.toString());
     if (imageModel == null) {
       return getFromServer(uri, ref: ref, shouldCache: shouldCache);
     }
@@ -56,7 +56,7 @@ abstract class BaseCacheManager {
       return getFromServer(uri, ref: ref, shouldCache: shouldCache);
     }
 
-    final cachedData = getFromCache(imageModel.localPath);
+    final cachedData = await getFromCache(imageModel.localPath);
     if (cachedData == null) {
       return getFromServer(uri, ref: ref, shouldCache: shouldCache);
     }
@@ -82,17 +82,11 @@ abstract class BaseCacheManager {
     required Reference ref,
   });
 
-  Uint8List? getFromCache(String localPath);
+  Future<Uint8List?> getFromCache(String localPath);
 
-  Future<void> clearCache() async {
-    await box.clear();
-    await box.flush();
-  }
+  Future<void> clearCache();
 
-  Future<void> deleteFromCache(Uri uri) async {
-    await box.delete("$uri");
-    await box.flush();
-  }
+  Future<void> deleteFromCache(Uri uri);
 }
 
 //Stub Class

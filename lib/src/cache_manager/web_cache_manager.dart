@@ -6,11 +6,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:hive/hive.dart';
 
 class CacheManager extends BaseCacheManager {
+  late final LazyBox<CachedImage> _box;
   @override
   Future<BaseCacheManager> init() async {
     Hive.registerAdapter(CachedImageAdapter());
 
-    box = await Hive.openBox<CachedImage>(kImageCacheBox);
+    _box = await Hive.openLazyBox<CachedImage>(kImageCacheBox);
     return this;
   }
 
@@ -31,15 +32,40 @@ class CacheManager extends BaseCacheManager {
       rawData: data,
     );
 
-    box.put(_imageModel.uri, _imageModel);
-    await box.flush();
+    _box.put(_imageModel.uri, _imageModel);
+    await _box.flush();
 
     return _imageModel;
   }
 
   @override
-  Uint8List? getFromCache(String localPath) => box.get(localPath)?.rawData;
+  Future<Uint8List?> getFromCache(String localPath) async {
+    final image = await _box.get(localPath);
+    return image?.rawData;
+  }
 
   @override
   Future dispose() => Hive.close();
+
+  @override
+  Future<void> clearCache() async {
+    await _box.clear();
+    return _box.flush();
+  }
+
+  @override
+  Future<void> deleteFromCache(Uri uri) async {
+    await _box.delete(uri.toString());
+    return _box.flush();
+  }
+
+  @override
+  Future<CachedImage?> getCachedImageModel(String key) {
+    return _box.get(key);
+  }
+
+  @override
+  Future<void> saveCachedImageModel(String key, CachedImage image) {
+    return _box.put(key, image);
+  }
 }

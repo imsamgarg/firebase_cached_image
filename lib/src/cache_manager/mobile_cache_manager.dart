@@ -13,6 +13,8 @@ const _kImageCacheDir = "flutter_cached_image";
 class CacheManager extends BaseCacheManager {
   late final String _appDir;
 
+  late final Box<CachedImage> _box;
+
   @override
   Future<BaseCacheManager> init() async {
     _appDir = await _getCacheDir();
@@ -21,7 +23,7 @@ class CacheManager extends BaseCacheManager {
       ..init(_appDir)
       ..registerAdapter(CachedImageAdapter());
 
-    box = await Hive.openBox<CachedImage>(kImageCacheBox);
+    _box = await Hive.openBox<CachedImage>(kImageCacheBox);
     return this;
   }
 
@@ -47,17 +49,17 @@ class CacheManager extends BaseCacheManager {
       localPath: localPath,
     );
 
-    box.put(_imageModel.uri, _imageModel);
-    await box.flush();
+    _box.put(_imageModel.uri, _imageModel);
+    await _box.flush();
 
     return _imageModel;
   }
 
   @override
-  Uint8List? getFromCache(String localPath) {
-    if (!File(localPath).existsSync()) return null;
+  Future<Uint8List?> getFromCache(String localPath) {
+    if (!File(localPath).existsSync()) return Future.value();
 
-    return File(localPath).readAsBytesSync();
+    return Future.value(File(localPath).readAsBytesSync());
   }
 
   String _saveDataToDisk(Uint8List? data, Reference ref) {
@@ -68,21 +70,32 @@ class CacheManager extends BaseCacheManager {
 
   @override
   Future<void> clearCache() async {
-    await super.clearCache();
+    await _box.clear();
+    await _box.flush();
     return Directory(_appDir).deleteSync();
   }
 
   @override
   Future<void> deleteFromCache(Uri uri) {
-    final image = box.get(uri.toString());
+    final image = _box.get(uri.toString());
     if (image != null) {
       File(image.localPath).deleteSync();
     }
 
-    box.delete(uri.toString());
-    return box.flush();
+    _box.delete(uri.toString());
+    return _box.flush();
   }
 
   @override
   Future dispose() => Hive.close();
+
+  @override
+  Future<CachedImage?> getCachedImageModel(String key) {
+    return Future.value(_box.get(key));
+  }
+
+  @override
+  Future<void> saveCachedImageModel(String key, CachedImage image) {
+    return Future.value(_box.put(key, image));
+  }
 }
