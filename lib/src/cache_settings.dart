@@ -1,13 +1,12 @@
 class CacheSettings {
+  final Source source;
   final bool shouldCache;
-  final CacheRefreshStrategy cacheRefreshStrategy;
-
+  final bool metadataRefreshInBackground;
   CacheSettings({
+    this.source = Source.cacheServer,
     this.shouldCache = true,
-    this.cacheRefreshStrategy = CacheRefreshStrategy.byMetadata,
+    this.metadataRefreshInBackground = true,
   });
 }
 
-enum CacheRefreshStrategy { byMetadata, never }
-
-enum CacheOptions { server, cacheAndServer, cacheAndServerByMetadata }
+enum Source { server, cacheServer, cacheServerByMetadata }
