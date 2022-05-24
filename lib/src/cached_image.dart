@@ -3,13 +3,15 @@ import 'dart:typed_data';
 import 'package:hive/hive.dart';
 
 class CachedImage {
-  final String localPath;
+  final String id;
+  final String fullLocalPath;
   final String uri;
   final int? cachedAt;
   final int modifiedAt;
   final Uint8List? rawData;
   CachedImage({
-    required this.localPath,
+    required this.id,
+    required this.fullLocalPath,
     required this.uri,
     this.cachedAt,
     required this.modifiedAt,
@@ -17,14 +19,16 @@ class CachedImage {
   });
 
   CachedImage copyWith({
-    String? localPath,
+    String? id,
+    String? fullLocalPath,
     String? uri,
     int? cachedAt,
     int? modifiedAt,
     Uint8List? rawData,
   }) {
     return CachedImage(
-      localPath: localPath ?? this.localPath,
+      id: id ?? this.id,
+      fullLocalPath: fullLocalPath ?? this.fullLocalPath,
       uri: uri ?? this.uri,
       cachedAt: cachedAt ?? this.cachedAt,
       modifiedAt: modifiedAt ?? this.modifiedAt,
@@ -34,7 +38,8 @@ class CachedImage {
 
   Map<String, dynamic> toMap() {
     return {
-      'localPath': localPath,
+      'id': id,
+      'fullLocalPath': fullLocalPath,
       'uri': uri,
       'cachedAt': cachedAt,
       'modifiedAt': modifiedAt,
@@ -44,7 +49,8 @@ class CachedImage {
 
   factory CachedImage.fromMap(Map<String, dynamic> map) {
     return CachedImage(
-      localPath: map['localPath'] as String,
+      id: map['id'] as String,
+      fullLocalPath: map['fullLocalPath'] as String,
       uri: map['uri'] as String,
       cachedAt: map['cachedAt'] as int?,
       modifiedAt: map['modifiedAt'] as int? ?? -1,
@@ -57,7 +63,8 @@ class CachedImage {
     if (identical(this, other)) return true;
 
     return other is CachedImage &&
-        other.localPath == localPath &&
+        other.id == id &&
+        other.fullLocalPath == fullLocalPath &&
         other.uri == uri &&
         other.cachedAt == cachedAt &&
         other.modifiedAt == modifiedAt &&
@@ -66,7 +73,8 @@ class CachedImage {
 
   @override
   int get hashCode {
-    return localPath.hashCode ^
+    return id.hashCode ^
+        fullLocalPath.hashCode ^
         uri.hashCode ^
         cachedAt.hashCode ^
         modifiedAt.hashCode ^
@@ -75,7 +83,7 @@ class CachedImage {
 
   @override
   String toString() {
-    return 'CachedImage(localPath: $localPath, uri: $uri, cachedAt: $cachedAt, modifiedAt: $modifiedAt, rawData: $rawData)';
+    return 'CachedImage(id: $id, fullLocalPath: $fullLocalPath, uri: $uri, cachedAt: $cachedAt, modifiedAt: $modifiedAt, rawData: $rawData)';
   }
 }
 
@@ -86,7 +94,6 @@ class CachedImageAdapter extends TypeAdapter<CachedImage> {
   }
 
   @override
-  // TODO: implement typeId
   int get typeId => 0;
 
   @override
