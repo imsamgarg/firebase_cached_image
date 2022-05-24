@@ -3,26 +3,13 @@ import 'dart:typed_data';
 
 import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart';
 import 'package:firebase_cached_image/src/cached_image.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
 const _kImageCacheDir = "flutter_cached_image";
-
-class CacheSettings {
-  final bool shouldCache;
-  final CacheRefreshStrategy cacheRefreshStrategy;
-
-  CacheSettings({
-    this.shouldCache = true,
-    this.cacheRefreshStrategy = CacheRefreshStrategy.byMetadata,
-  });
-}
-
-enum CacheRefreshStrategy { byMetadata, never }
-
-enum CacheOptions { server, cacheAndServer, cacheAndServerByMetadata }
+const _kImageCacheBox = "images_box";
 
 class CacheManager extends BaseCacheManager {
   static String? _appDir;
@@ -38,7 +25,7 @@ class CacheManager extends BaseCacheManager {
       ..init(_appDir)
       ..registerAdapter(CachedImageAdapter());
 
-    _box = await Hive.openBox<CachedImage>(kImageCacheBox);
+    _box = await Hive.openBox<CachedImage>(_kImageCacheBox);
     return this;
   }
 
@@ -48,69 +35,62 @@ class CacheManager extends BaseCacheManager {
   }
 
   @override
-  Future<CachedImage> cacheImage(
-    Uint8List? data, {
-    required Uri uri,
-    required Reference ref,
-  }) async {
-    final _time = DateTime.now();
-
-    final localPath = _saveDataToDisk(data, ref);
-
-    final _imageModel = CachedImage(
-      uri: uri.toString(),
-      modifiedAt: _time.millisecondsSinceEpoch,
-      cachedAt: _time.millisecondsSinceEpoch,
-      localPath: localPath,
-    );
-
-    _box.put(_imageModel.uri, _imageModel);
-    await _box.flush();
-
-    return _imageModel;
-  }
-
-  @override
-  Future<Uint8List?> getFromCache(String localPath) {
-    if (!File(localPath).existsSync()) return Future.value();
-
-    return Future.value(File(localPath).readAsBytesSync());
-  }
-
-  String _saveDataToDisk(Uint8List? data, Reference ref) {
-    final path = join(_appDir!, ref.fullPath);
-    File(path).writeAsBytesSync(data!);
-    return path;
-  }
-
-  @override
-  Future<void> clearCache() async {
+  Future<void> clear() async {
     await _box.clear();
     await _box.flush();
-    return Directory(_appDir!).deleteSync();
+    Directory(_appDir!).deleteSync(recursive: true);
   }
 
   @override
-  Future<void> deleteFromCache(Uri uri) {
-    final image = _box.get(uri.toString());
-    if (image != null) {
-      File(image.localPath).deleteSync();
+  Future<CachedImage?> delete(String id) async {
+    final image = _box.get(id);
+    if (image == null) return null;
+
+    final isExist = File(image.fullLocalPath).existsSync();
+    if (isExist) {
+      File(image.fullLocalPath).deleteSync();
     }
 
-    _box.delete(uri.toString());
-    return _box.flush();
+    await _box.delete(id);
+    await _box.flush();
+    return image;
   }
 
   @override
-  Future dispose() => Hive.close();
+  Future<CachedImage?> get(String id) {
+    final image = _box.get(id);
+    if (image == null) return Future.value();
 
-  @override
-  Future<CachedImage?> getCachedImageModel(String key) {
-    return Future.value(_box.get(key));
+    final isExist = File(image.fullLocalPath).existsSync();
+    if (!isExist) return Future.value();
+
+    final bytes = File(image.fullLocalPath).readAsBytesSync();
+    return Future.value(image.copyWith(rawData: bytes));
   }
 
+  @visibleForTesting
+  String getFullFilePath(String fileName) => join(_appDir!, fileName);
+
   @override
-  Future<void> saveCachedImageModel(String key, CachedImage image) {
-    return Future.value(_box.put(key, image));
+  Future<void> put(
+    String id, {
+    required String uri,
+    required int modifiedAt,
+    required Uint8List bytes,
+    int? cachedAt,
+  }) async {
+    final localPath = getFullFilePath(id);
+    final _imageForDb = CachedImage(
+      id: id,
+      fullLocalPath: localPath,
+      uri: uri,
+      modifiedAt: modifiedAt,
+      cachedAt: cachedAt,
+    );
+
+    File(localPath).writeAsBytesSync(bytes);
+
+    await _box.put(id, _imageForDb);
+    await _box.flush();
   }
 }
