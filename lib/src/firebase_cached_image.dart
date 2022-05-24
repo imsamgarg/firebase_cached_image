@@ -4,6 +4,7 @@ import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart'
 import 'package:firebase_cached_image/src/cache_settings.dart';
 import 'package:firebase_cached_image/src/firebase_storage_manager.dart';
 import 'package:firebase_cached_image/src/helper_functions.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class FirebaseCachedImage {
@@ -23,12 +24,15 @@ class FirebaseCachedImage {
     return;
   }
 
-  Future<Uint8List?> get(
-    String firebaseUri, {
+  Future<Uint8List?> get({
+    String? firebaseUrl,
     Reference? ref,
+    FirebaseApp? firebaseApp,
     CacheSettings? settings,
     int? maxSize,
   }) async {
+    assert(firebaseUrl != null || ref != null, "provide firebaseUrl or ref");
+
     final FirebaseStorageManager _storageManager;
     final Uri uri;
 
@@ -36,8 +40,8 @@ class FirebaseCachedImage {
       uri = getUriFromRef(ref);
       _storageManager = FirebaseStorageManager.fromRef(ref);
     } else {
-      uri = Uri.parse(firebaseUri);
-      _storageManager = FirebaseStorageManager.fromUri(uri);
+      uri = Uri.parse(firebaseUrl!);
+      _storageManager = FirebaseStorageManager.fromUri(uri, app: firebaseApp);
     }
 
     final _settings = settings ?? cacheSettings;
