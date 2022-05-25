@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_dynamic_calls
+
 import 'dart:typed_data';
 
 import 'package:hive/hive.dart';
@@ -47,7 +49,7 @@ class CachedImage {
     };
   }
 
-  factory CachedImage.fromMap(Map<String, dynamic> map) {
+  factory CachedImage.fromMap(dynamic map) {
     return CachedImage(
       id: map['id'] as String,
       fullLocalPath: map['fullLocalPath'] as String,
@@ -90,7 +92,7 @@ class CachedImage {
 class CachedImageAdapter extends TypeAdapter<CachedImage> {
   @override
   CachedImage read(BinaryReader reader) {
-    return CachedImage.fromMap(reader.read() as Map<String, dynamic>);
+    return CachedImage.fromMap(reader.read());
   }
 
   @override

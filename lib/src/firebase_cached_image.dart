@@ -18,8 +18,8 @@ class FirebaseCachedImage {
 
   static Future<void> initialise() async {
     if (_isInitialised) return;
-    instance = FirebaseCachedImage._();
     instance._cacheManager = await CacheManager().init();
+    instance = FirebaseCachedImage._();
     _isInitialised = true;
     return;
   }
@@ -84,7 +84,7 @@ class FirebaseCachedImage {
     if (_settings.metadataRefreshInBackground) {
       _storageManager.getIfUpdated(image.modifiedAt, maxSize).then(
         (bytes) {
-          if (bytes != null && !_shouldCache) _cacheImage(bytes, uri);
+          if (bytes != null && _shouldCache) _cacheImage(bytes, uri);
         },
       );
 

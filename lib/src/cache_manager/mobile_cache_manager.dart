@@ -12,14 +12,12 @@ const _kImageCacheDir = "flutter_cached_image";
 const _kImageCacheBox = "images_box";
 
 class CacheManager extends BaseCacheManager {
-  String? _appDir;
+  late final String _appDir;
   late final Box<CachedImage> _box;
 
   @override
   Future<CacheManager> init() async {
-    if (_appDir != null) {
-      _appDir = await _getCacheDir();
-    }
+    _appDir = await _getCacheDir();
 
     Hive
       ..init(_appDir)
@@ -57,7 +55,7 @@ class CacheManager extends BaseCacheManager {
   Future<void> clear() async {
     await _box.clear();
     await _box.flush();
-    Directory(_appDir!).deleteSync(recursive: true);
+    Directory(_appDir).deleteSync(recursive: true);
   }
 
   @override
@@ -91,7 +89,7 @@ class CacheManager extends BaseCacheManager {
   String getFullFilePath(String fileName) {
     final _fileName =
         fileName.startsWith("/") ? fileName.substring(1) : fileName;
-    return join(_appDir!, _fileName);
+    return join(_appDir, _fileName);
   }
 
   @override
