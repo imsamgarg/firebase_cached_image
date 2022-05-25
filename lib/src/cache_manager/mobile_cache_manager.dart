@@ -12,11 +12,11 @@ const _kImageCacheDir = "flutter_cached_image";
 const _kImageCacheBox = "images_box";
 
 class CacheManager extends BaseCacheManager {
-  static String? _appDir;
+  String? _appDir;
   late final Box<CachedImage> _box;
 
   @override
-  Future<BaseCacheManager> init() async {
+  Future<CacheManager> init() async {
     if (_appDir != null) {
       _appDir = await _getCacheDir();
     }
@@ -29,7 +29,26 @@ class CacheManager extends BaseCacheManager {
     return this;
   }
 
-  static Future<String> _getCacheDir() async {
+  //Only For Testing
+  @visibleForTesting
+  Future<CacheManager> test(
+    String appDir,
+    HiveInterface hive,
+    TypeAdapter adapter,
+  ) async {
+    _appDir = appDir;
+    hive
+      ..init(appDir)
+      ..registerAdapter(adapter);
+
+    _box = await hive.openBox<CachedImage>(_kImageCacheBox);
+    return this;
+  }
+
+  @visibleForTesting
+  String setAppDir(String dir) => _appDir = dir;
+
+  Future<String> _getCacheDir() async {
     final _dir = await getApplicationDocumentsDirectory();
     return join(_dir.path, _kImageCacheDir);
   }
@@ -69,7 +88,11 @@ class CacheManager extends BaseCacheManager {
   }
 
   @visibleForTesting
-  String getFullFilePath(String fileName) => join(_appDir!, fileName);
+  String getFullFilePath(String fileName) {
+    final _fileName =
+        fileName.startsWith("/") ? fileName.substring(1) : fileName;
+    return join(_appDir!, _fileName);
+  }
 
   @override
   Future<void> put(

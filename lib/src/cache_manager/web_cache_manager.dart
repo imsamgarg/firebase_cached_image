@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart';
 import 'package:firebase_cached_image/src/cached_image.dart';
+import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
 
 const _kImageCacheBox = "images_box";
@@ -10,10 +11,19 @@ class CacheManager extends BaseCacheManager {
   late final LazyBox<CachedImage> _box;
 
   @override
-  Future<BaseCacheManager> init() async {
+  Future<CacheManager> init() async {
     Hive.registerAdapter(CachedImageAdapter());
 
     _box = await Hive.openLazyBox<CachedImage>(_kImageCacheBox);
+    return this;
+  }
+
+  //Only For Testing
+  @visibleForTesting
+  Future<CacheManager> test(HiveInterface hive, TypeAdapter adapter) async {
+    hive.registerAdapter(adapter);
+
+    _box = await hive.openLazyBox<CachedImage>(_kImageCacheBox);
     return this;
   }
 
@@ -50,6 +60,7 @@ class CacheManager extends BaseCacheManager {
       uri: uri,
       modifiedAt: modifiedAt,
       cachedAt: cachedAt,
+      rawData: bytes,
     );
 
     await _box.put(id, _imageForDb);
