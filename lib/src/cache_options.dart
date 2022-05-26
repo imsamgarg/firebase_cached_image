@@ -42,5 +42,8 @@ enum Source {
   /// but if file does exist then it will compare the metadata of the file to the
   /// file in server if server has updated file then it will fetch file from server
   /// otherwise return file from cache.
+  ///
+  /// you can control whether metadata comparison happen in background or not by using
+  /// [CacheOptions.metadataRefreshInBackground] flag
   cacheServerByMetadata,
 }
