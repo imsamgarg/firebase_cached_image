@@ -89,18 +89,6 @@ enum Source {
 Note: Metadata retrieval is a Class B operation in google cloud storage. you will be charged for that. Check pricing here (https://cloud.google.com/storage/pricing#price-tables).Google does offer 50,000 free Class B operations per month.
 
 
-#### experimental web support
-
-if you are facing any problems in web then try disabling cache in web.
-
-```dart
-  await FirebaseCachedImage.initialise();
-  if (kIsWeb) {
-    FirebaseCachedImage.instance.cacheOptions = CacheOptions(
-      shouldCache: false,
-    );
-  }
-```
-
+#### Web is supported without caching
 
 Inspired From https://pub.dev/packages/firebase_image
