@@ -15,7 +15,14 @@ abstract class BaseCacheManager {
     required Uint8List bytes,
     int? cachedAt,
   });
-  Future<CachedImage?> delete(String id);
+  Future<void> update(
+    String id, {
+    required String uri,
+    int? modifiedAt,
+    Uint8List? bytes,
+    int? cachedAt,
+  });
+  Future<void> delete(String id);
   Future<void> clear();
   Future<BaseCacheManager> init();
 }

@@ -2,49 +2,23 @@ import 'dart:typed_data';
 
 import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart';
 import 'package:firebase_cached_image/src/cached_image.dart';
-import 'package:flutter/widgets.dart';
-import 'package:hive/hive.dart';
 
-const _kImageCacheBox = "images_box";
+// const _kImageCacheBox = "images_box";
 
 class CacheManager extends BaseCacheManager {
-  late final LazyBox<CachedImage> _box;
-
   @override
   Future<CacheManager> init() async {
-    Hive.registerAdapter(CachedImageAdapter());
-
-    _box = await Hive.openLazyBox<CachedImage>(_kImageCacheBox);
-    return this;
-  }
-
-  //Only For Testing
-  @visibleForTesting
-  Future<CacheManager> test(HiveInterface hive, TypeAdapter adapter) async {
-    hive.registerAdapter(adapter);
-
-    _box = await hive.openLazyBox<CachedImage>(_kImageCacheBox);
     return this;
   }
 
   @override
-  Future<void> clear() async {
-    await _box.clear();
-    await _box.flush();
-  }
+  Future<void> clear() async {}
 
   @override
-  Future<CachedImage?> delete(String id) async {
-    final image = await _box.get(id);
-    if (image == null) return null;
-
-    await _box.delete(id);
-    await _box.flush();
-    return image;
-  }
+  Future<void> delete(String id) async {}
 
   @override
-  Future<CachedImage?> get(String id) => _box.get(id);
+  Future<CachedImage?> get(String id) async => null;
 
   @override
   Future<void> put(
@@ -53,17 +27,14 @@ class CacheManager extends BaseCacheManager {
     required int modifiedAt,
     required Uint8List bytes,
     int? cachedAt,
-  }) async {
-    final _imageForDb = CachedImage(
-      id: id,
-      fullLocalPath: id,
-      uri: uri,
-      modifiedAt: modifiedAt,
-      cachedAt: cachedAt,
-      rawData: bytes,
-    );
+  }) async {}
 
-    await _box.put(id, _imageForDb);
-    await _box.flush();
-  }
+  @override
+  Future<void> update(
+    String id, {
+    required String uri,
+    int? modifiedAt,
+    Uint8List? bytes,
+    int? cachedAt,
+  }) async {}
 }

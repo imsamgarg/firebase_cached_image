@@ -1,88 +1,65 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart';
 import 'package:firebase_cached_image/src/cached_image.dart';
 import 'package:flutter/widgets.dart';
-import 'package:hive/hive.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart';
 
 const _kImageCacheDir = "flutter_cached_image";
-const _kImageCacheBox = "images_box";
+const _kImageCacheDb = "flutter_cached_images";
 
 class CacheManager extends BaseCacheManager {
   late final String _appDir;
-  late final Box<CachedImage> _box;
+  late final Database db;
 
   @override
   Future<CacheManager> init() async {
-    _appDir = await _getCacheDir();
+    _appDir = await _getCacheDir(_kImageCacheDir);
 
-    Hive
-      ..init(_appDir)
-      ..registerAdapter(CachedImageAdapter());
+    final _dbPath = join(await getDatabasesPath(), "$_kImageCacheDb.db");
 
-    _box = await Hive.openBox<CachedImage>(_kImageCacheBox);
-    return this;
-  }
+    db = await openDatabase(
+      _dbPath,
+      onCreate: _createDb,
+      version: 1,
+    );
 
-  //Only For Testing
-  @visibleForTesting
-  Future<CacheManager> test(
-    String appDir,
-    HiveInterface hive,
-    TypeAdapter adapter,
-  ) async {
-    _appDir = appDir;
-    hive
-      ..init(appDir)
-      ..registerAdapter(adapter);
-
-    _box = await hive.openBox<CachedImage>(_kImageCacheBox);
     return this;
   }
 
   @visibleForTesting
   String setAppDir(String dir) => _appDir = dir;
 
-  Future<String> _getCacheDir() async {
-    final _dir = await getApplicationDocumentsDirectory();
-    return join(_dir.path, _kImageCacheDir);
+  Future<String> _getCacheDir(String subDir) async {
+    final _dir = await getTemporaryDirectory();
+    return join(_dir.path, subDir);
   }
 
   @override
   Future<void> clear() async {
-    await _box.clear();
-    await _box.flush();
     Directory(_appDir).deleteSync(recursive: true);
   }
 
   @override
-  Future<CachedImage?> delete(String id) async {
-    final image = _box.get(id);
-    if (image == null) return null;
-
-    final isExist = File(image.fullLocalPath).existsSync();
-    if (isExist) {
-      File(image.fullLocalPath).deleteSync();
-    }
-
-    await _box.delete(id);
-    await _box.flush();
-    return image;
+  Future<void> delete(String id) async {
+    await db.delete(_kImageCacheDb, where: 'id = ?', whereArgs: [id]);
   }
 
   @override
-  Future<CachedImage?> get(String id) {
-    final image = _box.get(id);
-    if (image == null) return Future.value();
+  Future<CachedImage?> get(String id) async {
+    final maps = await db.query(
+      _kImageCacheDb,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
 
-    final isExist = File(image.fullLocalPath).existsSync();
-    if (!isExist) return Future.value();
+    if (maps.isEmpty) return null;
 
-    final bytes = File(image.fullLocalPath).readAsBytesSync();
-    return Future.value(image.copyWith(rawData: bytes));
+    return CachedImage.fromMap(maps[0]);
   }
 
   @visibleForTesting
@@ -101,6 +78,7 @@ class CacheManager extends BaseCacheManager {
     int? cachedAt,
   }) async {
     final localPath = getFullFilePath(id);
+
     final _imageForDb = CachedImage(
       id: id,
       fullLocalPath: localPath,
@@ -108,10 +86,60 @@ class CacheManager extends BaseCacheManager {
       modifiedAt: modifiedAt,
       cachedAt: cachedAt,
     );
+    final data = _imageForDb.toMap();
+    data.remove("rawData");
+
+    await db.insert(
+      _kImageCacheDb,
+      data,
+    );
 
     File(localPath).writeAsBytesSync(bytes);
+  }
 
-    await _box.put(id, _imageForDb);
-    await _box.flush();
+  Future<void> _createDb(Database db, int version) async {
+    return db.execute(
+      '''
+    CREATE TABLE $_kImageCacheDb (
+      id TEXT PRIMARY KEY,
+      fullLocalPath TEXT,
+      uri TEXT,
+      cachedAt INTEGER,
+      modifiedAt INTEGER,
+    )
+    ''',
+    );
+  }
+
+  @override
+  Future<void> update(
+    String id, {
+    required String uri,
+    int? modifiedAt,
+    Uint8List? bytes,
+    int? cachedAt,
+  }) async {
+    final localPath = getFullFilePath(id);
+
+    final data = <String, dynamic>{"uri": uri, "fullLocalPath": localPath};
+
+    if (modifiedAt != null) {
+      data.putIfAbsent("modifiedAt", () => modifiedAt);
+    }
+
+    if (cachedAt != null) {
+      data.putIfAbsent("cachedAt", () => cachedAt);
+    }
+
+    await db.update(
+      _kImageCacheDb,
+      data,
+      where: "id = ?",
+      whereArgs: [id],
+    );
+
+    if (bytes == null) return;
+
+    File(localPath).writeAsBytesSync(bytes);
   }
 }
