@@ -41,6 +41,7 @@ class CacheManager extends BaseCacheManager {
 
   @override
   Future<void> clear() async {
+    await db.delete(_kImageCacheDb);
     Directory(_appDir).deleteSync(recursive: true);
   }
 
