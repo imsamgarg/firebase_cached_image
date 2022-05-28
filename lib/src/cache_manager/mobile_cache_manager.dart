@@ -137,6 +137,7 @@ class CacheManager extends BaseCacheManager {
       data,
       where: "id = ?",
       whereArgs: [id],
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
     if (bytes == null) return;
