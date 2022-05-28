@@ -14,16 +14,18 @@ class FirebaseCachedImage {
   static late final FirebaseCachedImage instance;
   late final BaseCacheManager _cacheManager;
   static bool _isInitialised = false;
+  FirebaseApp? firebaseApp;
   FirebaseCachedImage._();
 
   /// Global cacheOptions used for all [FirebaseImageProvider] instances
   CacheOptions cacheOptions = CacheOptions();
 
   /// Initialise [FirebaseCachedImage]
-  static Future<void> initialise() async {
+  static Future<void> initialise([FirebaseApp? _firebaseApp]) async {
     if (_isInitialised) return;
     instance._cacheManager = await CacheManager().init();
     instance = FirebaseCachedImage._();
+    instance.firebaseApp = _firebaseApp;
     _isInitialised = true;
     return;
   }
@@ -64,7 +66,8 @@ class FirebaseCachedImage {
       _storageManager = FirebaseStorageManager.fromRef(ref);
     } else {
       uri = Uri.parse(firebaseUrl!);
-      _storageManager = FirebaseStorageManager.fromUri(uri, app: firebaseApp);
+      final _firebaseApp = firebaseApp ?? this.firebaseApp;
+      _storageManager = FirebaseStorageManager.fromUri(uri, app: _firebaseApp);
     }
 
     final _options = options ?? cacheOptions;
