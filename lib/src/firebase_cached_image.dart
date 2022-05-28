@@ -107,7 +107,9 @@ class FirebaseCachedImage {
     if (_options.metadataRefreshInBackground) {
       _storageManager.getIfUpdated(image.modifiedAt, maxSize).then(
         (bytes) {
-          if (bytes != null && _shouldCache) _cacheImage(bytes, uri);
+          if (bytes != null && _shouldCache) {
+            _cacheImage(bytes, uri, shouldUpate: true);
+          }
         },
       );
 
@@ -136,10 +138,23 @@ class FirebaseCachedImage {
     return bytes;
   }
 
-  Future<void> _cacheImage(Uint8List bytes, Uri uri) {
+  Future<void> _cacheImage(
+    Uint8List bytes,
+    Uri uri, {
+    bool shouldUpate = false,
+  }) {
     final uriString = uri.toString();
     final id = getUniqueId(uriString);
     final currentTimeInMills = DateTime.now().millisecondsSinceEpoch;
+
+    if (shouldUpate) {
+      return _cacheManager.update(
+        id,
+        uri: uriString,
+        modifiedAt: currentTimeInMills,
+        bytes: bytes,
+      );
+    }
 
     return _cacheManager.put(
       id,
