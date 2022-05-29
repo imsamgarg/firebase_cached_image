@@ -166,4 +166,75 @@ class FirebaseCachedImage {
       bytes: bytes,
     );
   }
+
+  /// PreCache file from cloud storage
+  Future<void> preCache({
+    String? firebaseUrl,
+    Reference? ref,
+    FirebaseApp? firebaseApp,
+    CacheOptions? options,
+    int? maxSize,
+  }) async {
+    final _cacheOptions = options ??
+        CacheOptions(
+          metadataRefreshInBackground: false,
+          source: Source.cacheServerByMetadata,
+        );
+
+    await get(
+      firebaseApp: firebaseApp,
+      firebaseUrl: firebaseUrl,
+      maxSize: maxSize,
+      options: _cacheOptions,
+      ref: ref,
+    );
+  }
+
+  /// Upload file and then save it to cache for use it later
+  Future<void> uploadAndCache({
+    required Reference ref,
+    required Uint8List bytes,
+    SettableMetadata? metadata,
+    UploadTask Function(UploadTask task)? uploadTaskCallback,
+  }) async {
+    final _manager = FirebaseStorageManager.fromRef(ref);
+    UploadTask task = _manager.putData(bytes, metadata);
+    task = uploadTaskCallback?.call(task) ?? task;
+    await task;
+
+    final uri = getUriFromRef(ref);
+    final url = uri.toString();
+    final id = getUniqueId(url);
+    final currentTimeInMills = DateTime.now().millisecondsSinceEpoch;
+
+    return _cacheManager.put(
+      id,
+      uri: url,
+      modifiedAt: currentTimeInMills,
+      bytes: bytes,
+      cachedAt: currentTimeInMills,
+    );
+  }
+
+  /// Delete all the cached files
+  Future<void> clearCache() => _cacheManager.clear();
+
+  /// Delete specific file from cache
+  Future<void> deleteFile({
+    String? firebaseUrl,
+    Reference? ref,
+    FirebaseApp? firebaseApp,
+  }) {
+    assert(firebaseUrl != null || ref != null, "provide firebaseUrl or ref");
+    late final Uri uri;
+
+    if (ref != null) {
+      uri = getUriFromRef(ref);
+    } else {
+      uri = Uri.parse(firebaseUrl!);
+    }
+
+    final id = getUniqueId(uri.toString());
+    return _cacheManager.delete(id);
+  }
 }

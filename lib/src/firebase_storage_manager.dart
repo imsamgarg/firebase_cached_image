@@ -34,4 +34,11 @@ class FirebaseStorageManager {
 
     return get(maxSize);
   }
+
+  UploadTask putData(
+    Uint8List bytes, [
+    SettableMetadata? metadata,
+  ]) {
+    return reference.putData(bytes, metadata);
+  }
 }
