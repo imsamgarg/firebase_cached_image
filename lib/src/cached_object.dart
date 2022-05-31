@@ -2,14 +2,14 @@
 
 import 'dart:typed_data';
 
-class CachedObjectModel {
+class CachedObject {
   final String id;
   final String fullLocalPath;
   final String uri;
   final int modifiedAt;
   final int? lastAccessedAt;
   final Uint8List? rawData;
-  CachedObjectModel({
+  CachedObject({
     required this.id,
     required this.fullLocalPath,
     required this.uri,
@@ -18,7 +18,7 @@ class CachedObjectModel {
     this.rawData,
   });
 
-  CachedObjectModel copyWith({
+  CachedObject copyWith({
     String? id,
     String? fullLocalPath,
     String? uri,
@@ -26,7 +26,7 @@ class CachedObjectModel {
     int? lastAccessedAt,
     Uint8List? rawData,
   }) {
-    return CachedObjectModel(
+    return CachedObject(
       id: id ?? this.id,
       fullLocalPath: fullLocalPath ?? this.fullLocalPath,
       uri: uri ?? this.uri,
@@ -47,8 +47,8 @@ class CachedObjectModel {
     };
   }
 
-  factory CachedObjectModel.fromMap(dynamic map) {
-    return CachedObjectModel(
+  factory CachedObject.fromMap(dynamic map) {
+    return CachedObject(
       id: map['id'] as String,
       fullLocalPath: map['fullLocalPath'] as String,
       uri: map['uri'] as String,
@@ -62,7 +62,7 @@ class CachedObjectModel {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other is CachedObjectModel &&
+    return other is CachedObject &&
         other.id == id &&
         other.fullLocalPath == fullLocalPath &&
         other.uri == uri &&

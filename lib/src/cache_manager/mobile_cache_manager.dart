@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart';
-import 'package:firebase_cached_image/src/cached_object_model.dart';
+import 'package:firebase_cached_image/src/cached_object.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -52,7 +52,7 @@ class CacheManager extends BaseCacheManager {
   }
 
   @override
-  Future<CachedObjectModel?> get(String id) async {
+  Future<CachedObject?> get(String id) async {
     final maps = await db.query(
       _kImageCacheDb,
       where: 'id = ?',
@@ -61,7 +61,7 @@ class CacheManager extends BaseCacheManager {
 
     if (maps.isEmpty) return null;
 
-    final image = CachedObjectModel.fromMap(maps[0]);
+    final image = CachedObject.fromMap(maps[0]);
     late final Uint8List bytes;
 
     try {
@@ -80,7 +80,7 @@ class CacheManager extends BaseCacheManager {
   }
 
   @override
-  Future<void> put(
+  Future<CachedObject> put(
     String id, {
     required String uri,
     required int modifiedAt,
@@ -88,11 +88,12 @@ class CacheManager extends BaseCacheManager {
   }) async {
     final localPath = getFullFilePath(id);
 
-    final _imageForDb = CachedObjectModel(
+    final _imageForDb = CachedObject(
       id: id,
       fullLocalPath: localPath,
       uri: uri,
       modifiedAt: modifiedAt,
+      rawData: bytes,
     );
 
     final data = _imageForDb.toMap();
@@ -105,6 +106,7 @@ class CacheManager extends BaseCacheManager {
     );
 
     await File(localPath).writeAsBytes(bytes);
+    return _imageForDb;
   }
 
   Future<void> _createDb(Database db, int version) async {
