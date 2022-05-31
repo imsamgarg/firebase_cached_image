@@ -2,44 +2,51 @@ import 'dart:typed_data';
 
 import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart';
 import 'package:firebase_cached_image/src/cache_options.dart';
+import 'package:firebase_cached_image/src/cached_object.dart';
+import 'package:firebase_cached_image/src/firebase_image_provider.dart';
 import 'package:firebase_cached_image/src/firebase_storage_manager.dart';
 import 'package:firebase_cached_image/src/helper_functions.dart';
-import 'package:firebase_cached_image/src/image_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 
 /// Singleton Cache Manager for Cloud Storage Objects.
-class FirebaseCachedImage {
+///
+class FirebaseCacheManager {
   ///Singleton Instance.
-  static late final FirebaseCachedImage instance;
+  static late final FirebaseCacheManager instance;
   late final BaseCacheManager _cacheManager;
   static bool _isInitialised = false;
-  FirebaseApp? firebaseApp;
-  FirebaseCachedImage._();
+  FirebaseCacheManager._();
 
   /// Global cacheOptions used for all [FirebaseImageProvider] instances
-  CacheOptions cacheOptions = CacheOptions();
+  late CacheOptions cacheOptions;
 
-  /// Initialise [FirebaseCachedImage]
-  static Future<void> initialise([FirebaseApp? _firebaseApp]) async {
+  /// Initialise [FirebaseCacheManager]
+  static Future<void> initialise() async {
     if (_isInitialised) return;
+    instance = FirebaseCacheManager._();
+    instance.cacheOptions = CacheOptions(
+      shouldCache: !kIsWeb,
+      source: kIsWeb ? Source.server : Source.cacheServerByMetadata,
+    );
     instance._cacheManager = await CacheManager().init();
-    instance = FirebaseCachedImage._();
-    instance.firebaseApp = _firebaseApp;
     _isInitialised = true;
     return;
   }
 
-  /// Fetch, cache and return [Uint8List] bytes for Cloud Storage Objects.
+  int get _currentTimeInMills => DateTime.now().millisecondsSinceEpoch;
+
+  /// Fetch, cache and return [Uint8List] bytes for Cloud Storage Image.
   ///
   /// You need to specify [firebaseUrl] or [ref]. [firebaseUrl] must start with 'gs://'.
   /// If you passed both then [ref] will be used. Both [firebaseUrl] and [ref] can not be null.
   ///
   /// you can control how file gets fetched and cached by passing [options].
-  Future<Uint8List?> get({
+  Future<Uint8List?> getSingleImage({
     /// The Url of the Cloud Storage Object
     ///
-    /// example: gs://bucket_f233/document.pdf
+    /// example: gs://bucket_f233/dp.jpg
     String? firebaseUrl,
 
     /// Cloud Storage reference to the object in the storage.
@@ -66,8 +73,7 @@ class FirebaseCachedImage {
       _storageManager = FirebaseStorageManager.fromRef(ref);
     } else {
       uri = Uri.parse(firebaseUrl!);
-      final _firebaseApp = firebaseApp ?? this.firebaseApp;
-      _storageManager = FirebaseStorageManager.fromUri(uri, app: _firebaseApp);
+      _storageManager = FirebaseStorageManager.fromUri(uri, app: firebaseApp);
     }
 
     final _options = options ?? cacheOptions;
@@ -86,7 +92,11 @@ class FirebaseCachedImage {
     if (_source == Source.cacheServer) {
       final id = getUniqueId(uri.toString());
       final image = await _cacheManager.get(id);
-      if (image != null) return image.rawData;
+
+      if (image != null && image.rawData != null) {
+        _updateLastAccessedTime(id);
+        return image.rawData;
+      }
 
       return _getFromServerAndCache(
         manager: _storageManager,
@@ -98,7 +108,7 @@ class FirebaseCachedImage {
 
     final id = getUniqueId(uri.toString());
     final image = await _cacheManager.get(id);
-    if (image == null) {
+    if (image == null || image.rawData == null) {
       return _getFromServerAndCache(
         manager: _storageManager,
         shouldCache: _shouldCache,
@@ -107,11 +117,13 @@ class FirebaseCachedImage {
       );
     }
 
+    _updateLastAccessedTime(id);
+
     if (_options.metadataRefreshInBackground) {
       _storageManager.getIfUpdated(image.modifiedAt, maxSize).then(
         (bytes) {
           if (bytes != null && _shouldCache) {
-            _cacheImage(bytes, uri, shouldUpate: true);
+            _updateCachedImage(id, bytes);
           }
         },
       );
@@ -124,7 +136,7 @@ class FirebaseCachedImage {
     if (bytes == null) return image.rawData;
     if (!_shouldCache) return bytes;
 
-    _cacheImage(bytes, uri);
+    _updateCachedImage(id, bytes);
     return bytes;
   }
 
@@ -143,26 +155,27 @@ class FirebaseCachedImage {
 
   Future<void> _cacheImage(
     Uint8List bytes,
-    Uri uri, {
-    bool shouldUpate = false,
-  }) {
+    Uri uri,
+  ) {
     final uriString = uri.toString();
     final id = getUniqueId(uriString);
-    final currentTimeInMills = DateTime.now().millisecondsSinceEpoch;
-
-    if (shouldUpate) {
-      return _cacheManager.update(
-        id,
-        uri: uriString,
-        modifiedAt: currentTimeInMills,
-        bytes: bytes,
-      );
-    }
 
     return _cacheManager.put(
       id,
       uri: uriString,
-      modifiedAt: currentTimeInMills,
+      modifiedAt: _currentTimeInMills,
+      bytes: bytes,
+    );
+  }
+
+  Future<void> _updateLastAccessedTime(String id) {
+    return _cacheManager.update(id, lastAccessedAt: _currentTimeInMills);
+  }
+
+  Future<void> _updateCachedImage(String id, Uint8List bytes) {
+    return _cacheManager.update(
+      id,
+      modifiedAt: _currentTimeInMills,
       bytes: bytes,
     );
   }
@@ -181,7 +194,7 @@ class FirebaseCachedImage {
           source: Source.cacheServerByMetadata,
         );
 
-    await get(
+    await getSingleImage(
       firebaseApp: firebaseApp,
       firebaseUrl: firebaseUrl,
       maxSize: maxSize,
@@ -191,7 +204,7 @@ class FirebaseCachedImage {
   }
 
   /// Upload file and then save it to cache for use it later
-  Future<void> uploadAndCache({
+  Future<CachedObject> uploadAndCache({
     required Reference ref,
     required Uint8List bytes,
     SettableMetadata? metadata,
@@ -212,7 +225,6 @@ class FirebaseCachedImage {
       uri: url,
       modifiedAt: currentTimeInMills,
       bytes: bytes,
-      cachedAt: currentTimeInMills,
     );
   }
 
@@ -220,7 +232,7 @@ class FirebaseCachedImage {
   Future<void> clearCache() => _cacheManager.clear();
 
   /// Delete specific file from cache
-  Future<void> deleteFile({
+  Future<void> delete({
     String? firebaseUrl,
     Reference? ref,
     FirebaseApp? firebaseApp,

@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:firebase_cached_image/src/cache_options.dart';
-import 'package:firebase_cached_image/src/firebase_cached_image.dart';
+import 'package:firebase_cached_image/src/firebase_cache_manager.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// Control how image gets fetched and cached
   ///
-  /// by default it uses cacheOptions from [FirebaseCachedImage] class
+  /// by default it uses cacheOptions from [FirebaseCacheManager] class
   final CacheOptions? options;
 
   /// Cloud Storage reference to the object in the storage.
@@ -87,8 +87,8 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   }
 
   Future<Uint8List> _fetchImage() async {
-    await FirebaseCachedImage.initialise();
-    final bytes = await FirebaseCachedImage.instance.get(
+    await FirebaseCacheManager.initialise();
+    final bytes = await FirebaseCacheManager.instance.getSingleImage(
       firebaseUrl: firebaseUrl,
       maxSize: maxSize,
       ref: ref,
@@ -123,11 +123,13 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
 
   @override
   int get hashCode {
-    return options.hashCode ^
-        ref.hashCode ^
-        maxSize.hashCode ^
-        scale.hashCode ^
-        firebaseApp.hashCode ^
-        firebaseUrl.hashCode;
+    return hashValues(
+      options.hashCode,
+      ref.hashCode,
+      maxSize.hashCode,
+      scale.hashCode,
+      firebaseApp.hashCode,
+      firebaseUrl.hashCode,
+    );
   }
 }

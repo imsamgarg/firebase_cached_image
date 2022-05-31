@@ -1,3 +1,3 @@
 export 'package:firebase_cached_image/src/cache_options.dart';
-export 'package:firebase_cached_image/src/firebase_cached_image.dart';
-export 'package:firebase_cached_image/src/image_provider.dart';
+export 'package:firebase_cached_image/src/firebase_cache_manager.dart';
+export 'package:firebase_cached_image/src/firebase_image_provider.dart';
