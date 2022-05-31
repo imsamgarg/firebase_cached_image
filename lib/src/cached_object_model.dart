@@ -2,36 +2,36 @@
 
 import 'dart:typed_data';
 
-class CachedImage {
+class CachedObjectModel {
   final String id;
   final String fullLocalPath;
   final String uri;
-  final int? cachedAt;
   final int modifiedAt;
+  final int? lastAccessedAt;
   final Uint8List? rawData;
-  CachedImage({
+  CachedObjectModel({
     required this.id,
     required this.fullLocalPath,
     required this.uri,
-    this.cachedAt,
     required this.modifiedAt,
+    this.lastAccessedAt,
     this.rawData,
   });
 
-  CachedImage copyWith({
+  CachedObjectModel copyWith({
     String? id,
     String? fullLocalPath,
     String? uri,
-    int? cachedAt,
     int? modifiedAt,
+    int? lastAccessedAt,
     Uint8List? rawData,
   }) {
-    return CachedImage(
+    return CachedObjectModel(
       id: id ?? this.id,
       fullLocalPath: fullLocalPath ?? this.fullLocalPath,
       uri: uri ?? this.uri,
-      cachedAt: cachedAt ?? this.cachedAt,
       modifiedAt: modifiedAt ?? this.modifiedAt,
+      lastAccessedAt: lastAccessedAt ?? this.lastAccessedAt,
       rawData: rawData ?? this.rawData,
     );
   }
@@ -41,20 +41,20 @@ class CachedImage {
       'id': id,
       'fullLocalPath': fullLocalPath,
       'uri': uri,
-      if (cachedAt != null) 'cachedAt': cachedAt,
       'modifiedAt': modifiedAt,
+      'lastAccessedAt': lastAccessedAt,
       if (rawData != null) 'rawData': rawData,
     };
   }
 
-  factory CachedImage.fromMap(dynamic map) {
-    return CachedImage(
+  factory CachedObjectModel.fromMap(dynamic map) {
+    return CachedObjectModel(
       id: map['id'] as String,
       fullLocalPath: map['fullLocalPath'] as String,
       uri: map['uri'] as String,
-      cachedAt: map['cachedAt'] as int?,
       modifiedAt: map['modifiedAt'] as int? ?? -1,
       rawData: map['rawData'] != null ? (map['rawData'] as Uint8List) : null,
+      lastAccessedAt: (map['lastAccessedAt'] as int?) ?? 0,
     );
   }
 
@@ -62,12 +62,12 @@ class CachedImage {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other is CachedImage &&
+    return other is CachedObjectModel &&
         other.id == id &&
         other.fullLocalPath == fullLocalPath &&
         other.uri == uri &&
-        other.cachedAt == cachedAt &&
         other.modifiedAt == modifiedAt &&
+        other.lastAccessedAt == lastAccessedAt &&
         other.rawData == rawData;
   }
 
@@ -76,13 +76,13 @@ class CachedImage {
     return id.hashCode ^
         fullLocalPath.hashCode ^
         uri.hashCode ^
-        cachedAt.hashCode ^
         modifiedAt.hashCode ^
+        lastAccessedAt.hashCode ^
         rawData.hashCode;
   }
 
   @override
   String toString() {
-    return 'CachedImage(id: $id, fullLocalPath: $fullLocalPath, uri: $uri, cachedAt: $cachedAt, modifiedAt: $modifiedAt, rawData: $rawData)';
+    return 'CachedImage(id: $id, fullLocalPath: $fullLocalPath, uri: $uri, modifiedAt: $modifiedAt, lastAccessedAt: $lastAccessedAt, rawData: $rawData)';
   }
 }

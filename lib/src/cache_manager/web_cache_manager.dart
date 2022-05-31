@@ -1,9 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart';
-import 'package:firebase_cached_image/src/cached_image.dart';
-
-// const _kImageCacheBox = "images_box";
+import 'package:firebase_cached_image/src/cached_object_model.dart';
 
 class CacheManager extends BaseCacheManager {
   @override
@@ -18,7 +16,7 @@ class CacheManager extends BaseCacheManager {
   Future<void> delete(String id) async {}
 
   @override
-  Future<CachedImage?> get(String id) async => null;
+  Future<CachedObjectModel?> get(String id) async => null;
 
   @override
   Future<void> put(
@@ -26,15 +24,13 @@ class CacheManager extends BaseCacheManager {
     required String uri,
     required int modifiedAt,
     required Uint8List bytes,
-    int? cachedAt,
   }) async {}
 
   @override
   Future<void> update(
     String id, {
-    required String uri,
     int? modifiedAt,
     Uint8List? bytes,
-    int? cachedAt,
+    int? lastAccessedAt,
   }) async {}
 }
