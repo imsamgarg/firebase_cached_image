@@ -4,14 +4,14 @@ import 'dart:typed_data';
 
 class CachedObject {
   final String id;
-  final String fullLocalPath;
+  final String? fullLocalPath;
   final String uri;
   final int modifiedAt;
   final int? lastAccessedAt;
   final Uint8List? rawData;
   CachedObject({
     required this.id,
-    required this.fullLocalPath,
+    this.fullLocalPath,
     required this.uri,
     required this.modifiedAt,
     this.lastAccessedAt,
@@ -50,7 +50,7 @@ class CachedObject {
   factory CachedObject.fromMap(dynamic map) {
     return CachedObject(
       id: map['id'] as String,
-      fullLocalPath: map['fullLocalPath'] as String,
+      fullLocalPath: map['fullLocalPath'] as String?,
       uri: map['uri'] as String,
       modifiedAt: map['modifiedAt'] as int? ?? -1,
       rawData: map['rawData'] != null ? (map['rawData'] as Uint8List) : null,

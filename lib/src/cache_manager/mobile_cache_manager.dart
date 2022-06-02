@@ -49,6 +49,12 @@ class CacheManager extends BaseCacheManager {
   @override
   Future<void> delete(String id) async {
     await db.delete(_kImageCacheDb, where: 'id = ?', whereArgs: [id]);
+    final path = getFullFilePath(id);
+    try {
+      await File(path).delete();
+    } on Exception {
+      //Digest Error
+    }
   }
 
   @override
@@ -116,7 +122,7 @@ class CacheManager extends BaseCacheManager {
       id TEXT PRIMARY KEY,
       fullLocalPath TEXT,
       uri TEXT,
-      lastAccessedAt INTEGER
+      lastAccessedAt INTEGER,
       modifiedAt INTEGER
     )
     ''',

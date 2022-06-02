@@ -11,12 +11,10 @@ class FirebaseStorageManager {
 
   factory FirebaseStorageManager.fromUri(Uri uri, {FirebaseApp? app}) {
     final ref = getRefFromUri(uri, app);
-    return FirebaseStorageManager._(ref);
+    return FirebaseStorageManager.fromRef(ref);
   }
 
   FirebaseStorageManager.fromRef(this.reference);
-
-  FirebaseStorageManager._(this.reference);
 
   Future<Uint8List?> get([int? maxSize]) {
     return reference.getData(maxSize ?? _kDefaultMaxSize);
@@ -35,10 +33,7 @@ class FirebaseStorageManager {
     return get(maxSize);
   }
 
-  UploadTask putData(
-    Uint8List bytes, [
-    SettableMetadata? metadata,
-  ]) {
+  UploadTask putData(Uint8List bytes, [SettableMetadata? metadata]) {
     return reference.putData(bytes, metadata);
   }
 }
