@@ -88,14 +88,14 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
 
   Future<Uint8List> _fetchImage() async {
     await FirebaseCacheManager.initialise();
-    final bytes = await FirebaseCacheManager.instance.getSingleImage(
+    final image = await FirebaseCacheManager.instance.getSingleFile(
       firebaseUrl: firebaseUrl,
       maxSize: maxSize,
       ref: ref,
       options: options,
       firebaseApp: firebaseApp,
     );
-    return bytes!;
+    return image.rawData!;
   }
 
   @override

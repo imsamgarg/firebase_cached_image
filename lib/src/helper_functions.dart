@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:firebase_cached_image/src/cached_object.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
@@ -19,4 +22,17 @@ Reference getRefFromUri(Uri uri, FirebaseApp? app) {
 
 String getUniqueId(String url) {
   return const Uuid().v5(Uuid.NAMESPACE_URL, url);
+}
+
+CachedObject createCachedObject(
+  String id, {
+  required String url,
+  Uint8List? bytes,
+}) {
+  return CachedObject(
+    id: id,
+    uri: url,
+    modifiedAt: DateTime.now().millisecondsSinceEpoch,
+    rawData: bytes,
+  );
 }

@@ -37,30 +37,11 @@ class FirebaseCacheManager {
 
   int get _currentTimeInMills => DateTime.now().millisecondsSinceEpoch;
 
-  /// Fetch, cache and return [Uint8List] bytes for Cloud Storage Image.
-  ///
-  /// You need to specify [firebaseUrl] or [ref]. [firebaseUrl] must start with 'gs://'.
-  /// If you passed both then [ref] will be used. Both [firebaseUrl] and [ref] can not be null.
-  ///
-  /// you can control how file gets fetched and cached by passing [options].
-  Future<Uint8List?> getSingleImage({
-    /// The Url of the Cloud Storage Object
-    ///
-    /// example: gs://bucket_f233/dp.jpg
+  Future<CachedObject> _getFile({
     String? firebaseUrl,
-
-    /// Cloud Storage reference to the object in the storage.
     Reference? ref,
-
-    /// Default: the default Firebase app. Specifies a custom Firebase app to make the request to the bucket from
     FirebaseApp? firebaseApp,
-
-    /// Control how image gets fetched and cached
-    ///
-    /// by default it uses global [cacheOptions]
     CacheOptions? options,
-
-    /// Default: 10MB. The maximum size in bytes to be allocated in the device's memory for the image.
     int? maxSize,
   }) async {
     assert(firebaseUrl != null || ref != null, "provide firebaseUrl or ref");
@@ -81,12 +62,8 @@ class FirebaseCacheManager {
     final _shouldCache = _options.shouldCache;
 
     if (_source == Source.server) {
-      return _getFromServerAndCache(
-        manager: _storageManager,
-        shouldCache: _shouldCache,
-        uri: uri,
-        maxSize: maxSize,
-      );
+      final bytes = await _storageManager.get(maxSize);
+      return _cacheFile(uri, bytes!, shouldCache: _shouldCache);
     }
 
     if (_source == Source.cacheServer) {
@@ -95,26 +72,19 @@ class FirebaseCacheManager {
 
       if (image != null && image.rawData != null) {
         _updateLastAccessedTime(id);
-        return image.rawData;
+        return image;
       }
 
-      return _getFromServerAndCache(
-        manager: _storageManager,
-        shouldCache: _shouldCache,
-        uri: uri,
-        maxSize: maxSize,
-      );
+      final bytes = await _storageManager.get(maxSize);
+      return _cacheFile(uri, bytes!, shouldCache: _shouldCache);
     }
 
     final id = getUniqueId(uri.toString());
     final image = await _cacheManager.get(id);
+
     if (image == null || image.rawData == null) {
-      return _getFromServerAndCache(
-        manager: _storageManager,
-        shouldCache: _shouldCache,
-        uri: uri,
-        maxSize: maxSize,
-      );
+      final bytes = await _storageManager.get(maxSize);
+      return _cacheFile(uri, bytes!, shouldCache: _shouldCache);
     }
 
     _updateLastAccessedTime(id);
@@ -128,37 +98,65 @@ class FirebaseCacheManager {
         },
       );
 
-      return image.rawData;
+      return image;
     }
 
     final bytes = await _storageManager.getIfUpdated(image.modifiedAt, maxSize);
+    if (bytes == null) return image;
+    final newImage = image.copyWith(rawData: bytes);
 
-    if (bytes == null) return image.rawData;
-    if (!_shouldCache) return bytes;
+    if (!_shouldCache) return newImage;
 
     _updateCachedImage(id, bytes);
-    return bytes;
+    return newImage;
   }
 
-  Future<Uint8List?> _getFromServerAndCache({
-    required Uri uri,
-    required bool shouldCache,
-    required FirebaseStorageManager manager,
+  /// Fetch, cache and return [Uint8List] bytes for Cloud Storage File.
+  ///
+  /// You need to specify [firebaseUrl] or [ref]. [firebaseUrl] must start with 'gs://'.
+  /// If you passed both then [ref] will be used. Both [firebaseUrl] and [ref] can not be null.
+  ///
+  /// you can control how file gets fetched and cached by passing [options].
+  Future<CachedObject> getSingleFile({
+    /// The Url of the Cloud Storage Object
+    ///
+    /// example: gs://bucket_f233/dp.jpg
+    String? firebaseUrl,
+
+    /// Cloud Storage reference to the object in the storage.
+    Reference? ref,
+
+    /// Default: the default Firebase app. Specifies a custom Firebase app to make the request to the bucket from
+    FirebaseApp? firebaseApp,
+
+    /// Control how image gets fetched and cached
+    ///
+    /// by default it uses global [cacheOptions]
+    CacheOptions? options,
+
+    /// Default: 10MB. The maximum size in bytes to be allocated in the device's memory for the image.
     int? maxSize,
-  }) async {
-    final bytes = await manager.get(maxSize);
-    if (!shouldCache) return bytes;
-
-    _cacheImage(bytes!, uri);
-    return bytes;
+  }) {
+    return _getFile(
+      firebaseApp: firebaseApp,
+      firebaseUrl: firebaseUrl,
+      maxSize: maxSize,
+      options: options,
+      ref: ref,
+    );
   }
 
-  Future<void> _cacheImage(
-    Uint8List bytes,
+  Future<CachedObject> _cacheFile(
     Uri uri,
-  ) {
+    Uint8List bytes, {
+    required bool shouldCache,
+  }) async {
     final uriString = uri.toString();
     final id = getUniqueId(uriString);
+
+    if (!shouldCache) {
+      return createCachedObject(id, url: uriString, bytes: bytes);
+    }
 
     return _cacheManager.put(
       id,
@@ -194,7 +192,7 @@ class FirebaseCacheManager {
           source: Source.cacheServerByMetadata,
         );
 
-    await getSingleImage(
+    await _getFile(
       firebaseApp: firebaseApp,
       firebaseUrl: firebaseUrl,
       maxSize: maxSize,
