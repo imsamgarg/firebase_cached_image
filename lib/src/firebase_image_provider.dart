@@ -1,8 +1,7 @@
 import 'dart:typed_data';
 import 'dart:ui';
 
-import 'package:firebase_cached_image/src/cache_options.dart';
-import 'package:firebase_cached_image/src/firebase_cache_manager.dart';
+import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
@@ -24,18 +23,25 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// Default: 1.0. The scale to display the image at.
   final double scale;
 
-  /// Default: the default Firebase app. Specifies a custom Firebase app to make the request to the bucket from
-  final FirebaseApp? firebaseApp;
-
-  /// The Url of the Cloud Storage image
+  /// The FirebaseUrl of the Cloud Storage image
   ///
-  /// example: gs://bucket_f233/logo.jpg
-  final String? firebaseUrl;
+  /// example:
+  /// ```
+  /// FirebaseUrl("gs://bucket_f233/logo.jpg")
+  /// ```
+  ///
+  /// you can specify [FirebaseApp] if you are multiple firebase projects in app
+  /// ex:
+  ///
+  /// ```
+  /// FirebaseUrl("gs://bucket_f233/logo.jpg", app: Firebase.app("app_name"));
+  ///
+  /// ```
+  final FirebaseUrl? url;
 
   /// Fetch, cache and return ImageProvider for Cloud Storage Image Objects.
   ///
-  /// You need to specify [firebaseUrl] or [ref]. [firebaseUrl] must start with 'gs://'.
-  /// If you passed both then [ref] will be used. Both [firebaseUrl] and [ref] can not be null.
+  /// You need to specify [url] or [ref]. If you passed both then [ref] will be used. Both [url] and [ref] can not be null.
   ///
   /// you can control how file gets fetched and cached by passing [options].
   ///
@@ -44,7 +50,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// ```
   ///Image(
   ///  image: FirebaseImageProvider(
-  ///    firebaseUrl: "gs://bucket_f233/logo.jpg",
+  ///    firebaseUrl: FirebaseUrl("gs://bucket_f233/logo.jpg"),
   ///
   ///    options: CacheOptions(
   ///      source: Source.server,
@@ -61,20 +67,19 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// ),
   /// ```
   FirebaseImageProvider({
-    this.firebaseUrl,
+    this.url,
     this.ref,
     this.options,
     this.scale = 1.0,
     this.maxSize,
-    this.firebaseApp,
-  }) : assert(firebaseUrl != null || ref != null, "provide firebaseUrl or ref");
+  }) : assert(url != null || ref != null, "provide url or ref");
 
   @override
   ImageStreamCompleter load(FirebaseImageProvider key, DecoderCallback decode) {
     return MultiFrameImageStreamCompleter(
       codec: key._codec(decode),
       scale: key.scale,
-      debugLabel: key.firebaseUrl ?? key.ref.toString(),
+      debugLabel: key.url?.url ?? key.ref.toString(),
       informationCollector: () => <DiagnosticsNode>[
         DiagnosticsProperty<FirebaseImageProvider>('Image provider', this),
         DiagnosticsProperty<FirebaseImageProvider>('Image key', key),
@@ -89,11 +94,10 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   Future<Uint8List> _fetchImage() async {
     await FirebaseCacheManager.initialise();
     final image = await FirebaseCacheManager.instance.getSingleFile(
-      firebaseUrl: firebaseUrl,
+      url: url,
       maxSize: maxSize,
       ref: ref,
       options: options,
-      firebaseApp: firebaseApp,
     );
     return image.rawData!;
   }
@@ -105,7 +109,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
 
   @override
   String toString() {
-    return 'FirebaseImageProvider(settings: $options, ref: $ref, maxSize: $maxSize, scale: $scale, firebaseApp: $firebaseApp, firebaseUrl: $firebaseUrl)';
+    return 'FirebaseImageProvider(settings: $options, ref: $ref, maxSize: $maxSize, scale: $scale, url: $url)';
   }
 
   @override
@@ -117,8 +121,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
         other.ref == ref &&
         other.maxSize == maxSize &&
         other.scale == scale &&
-        other.firebaseApp == firebaseApp &&
-        other.firebaseUrl == firebaseUrl;
+        other.url == other.url;
   }
 
   @override
@@ -128,8 +131,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
       ref.hashCode,
       maxSize.hashCode,
       scale.hashCode,
-      firebaseApp.hashCode,
-      firebaseUrl.hashCode,
+      url.hashCode,
     );
   }
 }

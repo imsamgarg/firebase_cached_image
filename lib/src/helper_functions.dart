@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:firebase_cached_image/src/cached_object.dart';
+import 'package:firebase_cached_image/src/core/cached_object.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';

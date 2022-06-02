@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:firebase_cached_image/src/cached_object.dart';
+import 'package:firebase_cached_image/src/core/cached_object.dart';
 
 export 'package:firebase_cached_image/src/cache_manager/stub_cache_manager.dart'
     if (dart.library.html) 'package:firebase_cached_image/src/cache_manager/web_cache_manager.dart'

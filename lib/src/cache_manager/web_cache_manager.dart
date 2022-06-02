@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart';
-import 'package:firebase_cached_image/src/cached_object.dart';
+import 'package:firebase_cached_image/src/core/cached_object.dart';
 
 class CacheManager extends BaseCacheManager {
   @override

@@ -1,9 +1,8 @@
 import 'dart:typed_data';
 
+import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart';
-import 'package:firebase_cached_image/src/cache_options.dart';
-import 'package:firebase_cached_image/src/cached_object.dart';
-import 'package:firebase_cached_image/src/firebase_image_provider.dart';
+import 'package:firebase_cached_image/src/core/cached_object.dart';
 import 'package:firebase_cached_image/src/firebase_storage_manager.dart';
 import 'package:firebase_cached_image/src/helper_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -11,7 +10,6 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 /// Singleton Cache Manager for Cloud Storage Objects.
-///
 class FirebaseCacheManager {
   ///Singleton Instance.
   static late final FirebaseCacheManager instance;
@@ -38,23 +36,22 @@ class FirebaseCacheManager {
   int get _currentTimeInMills => DateTime.now().millisecondsSinceEpoch;
 
   Future<CachedObject> _getFile({
-    String? firebaseUrl,
+    FirebaseUrl? url,
     Reference? ref,
-    FirebaseApp? firebaseApp,
     CacheOptions? options,
     int? maxSize,
   }) async {
-    assert(firebaseUrl != null || ref != null, "provide firebaseUrl or ref");
+    assert(url != null || ref != null, "provide url or ref");
 
     final FirebaseStorageManager _storageManager;
     final Uri uri;
+    final _ref = ref ?? url!.ref;
+    _storageManager = FirebaseStorageManager.fromRef(_ref);
 
     if (ref != null) {
       uri = getUriFromRef(ref);
-      _storageManager = FirebaseStorageManager.fromRef(ref);
     } else {
-      uri = Uri.parse(firebaseUrl!);
-      _storageManager = FirebaseStorageManager.fromUri(uri, app: firebaseApp);
+      uri = url!.parsedUri;
     }
 
     final _options = options ?? cacheOptions;
@@ -118,16 +115,24 @@ class FirebaseCacheManager {
   ///
   /// you can control how file gets fetched and cached by passing [options].
   Future<CachedObject> getSingleFile({
-    /// The Url of the Cloud Storage Object
+    /// The FirebaseUrl of the Cloud Storage image
     ///
-    /// example: gs://bucket_f233/dp.jpg
-    String? firebaseUrl,
+    /// example:
+    /// ```
+    /// FirebaseUrl("gs://bucket_f233/logo.jpg")
+    /// ```
+    ///
+    /// you can specify [FirebaseApp] if you are multiple firebase projects in app
+    /// ex:
+    ///
+    /// ```
+    /// FirebaseUrl("gs://bucket_f233/logo.jpg", app: Firebase.app("app_name"));
+    ///
+    /// ```
+    FirebaseUrl? url,
 
     /// Cloud Storage reference to the object in the storage.
     Reference? ref,
-
-    /// Default: the default Firebase app. Specifies a custom Firebase app to make the request to the bucket from
-    FirebaseApp? firebaseApp,
 
     /// Control how image gets fetched and cached
     ///
@@ -138,8 +143,7 @@ class FirebaseCacheManager {
     int? maxSize,
   }) {
     return _getFile(
-      firebaseApp: firebaseApp,
-      firebaseUrl: firebaseUrl,
+      url: url,
       maxSize: maxSize,
       options: options,
       ref: ref,
@@ -180,9 +184,8 @@ class FirebaseCacheManager {
 
   /// PreCache file from cloud storage
   Future<void> preCache({
-    String? firebaseUrl,
+    FirebaseUrl? url,
     Reference? ref,
-    FirebaseApp? firebaseApp,
     CacheOptions? options,
     int? maxSize,
   }) async {
@@ -193,8 +196,7 @@ class FirebaseCacheManager {
         );
 
     await _getFile(
-      firebaseApp: firebaseApp,
-      firebaseUrl: firebaseUrl,
+      url: url,
       maxSize: maxSize,
       options: _cacheOptions,
       ref: ref,
@@ -216,12 +218,11 @@ class FirebaseCacheManager {
     final uri = getUriFromRef(ref);
     final url = uri.toString();
     final id = getUniqueId(url);
-    final currentTimeInMills = DateTime.now().millisecondsSinceEpoch;
 
     return _cacheManager.put(
       id,
       uri: url,
-      modifiedAt: currentTimeInMills,
+      modifiedAt: _currentTimeInMills,
       bytes: bytes,
     );
   }
@@ -231,17 +232,16 @@ class FirebaseCacheManager {
 
   /// Delete specific file from cache
   Future<void> delete({
-    String? firebaseUrl,
+    FirebaseUrl? url,
     Reference? ref,
-    FirebaseApp? firebaseApp,
   }) {
-    assert(firebaseUrl != null || ref != null, "provide firebaseUrl or ref");
+    assert(url != null || ref != null, "provide url or ref");
     late final Uri uri;
 
     if (ref != null) {
       uri = getUriFromRef(ref);
     } else {
-      uri = Uri.parse(firebaseUrl!);
+      uri = url!.parsedUri;
     }
 
     final id = getUniqueId(uri.toString());
