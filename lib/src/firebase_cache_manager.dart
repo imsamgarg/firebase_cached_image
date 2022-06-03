@@ -14,22 +14,22 @@ class FirebaseCacheManager {
   ///Singleton Instance.
   static late final FirebaseCacheManager instance;
   late final BaseCacheManager _cacheManager;
-  static bool _isInitialised = false;
+  static bool _isInitialized = false;
   FirebaseCacheManager._();
 
   /// Global cacheOptions used for all [FirebaseImageProvider] instances
   late CacheOptions cacheOptions;
 
-  /// Initialise [FirebaseCacheManager]
-  static Future<void> initialise() async {
-    if (_isInitialised) return;
+  /// Initialize [FirebaseCacheManager]
+  static Future<void> initialize() async {
+    if (_isInitialized) return;
     instance = FirebaseCacheManager._();
     instance.cacheOptions = CacheOptions(
       shouldCache: !kIsWeb,
       source: kIsWeb ? Source.server : Source.cacheServerByMetadata,
     );
     instance._cacheManager = await CacheManager().init();
-    _isInitialised = true;
+    _isInitialized = true;
     return;
   }
 

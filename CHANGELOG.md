@@ -1,3 +1,9 @@
+## 0.3.0
+
+* Bug Fixes.
+* Some Apis changed.
+* Added more functionality
+
 ## 0.2.0
 
 * database changed to sqflite.

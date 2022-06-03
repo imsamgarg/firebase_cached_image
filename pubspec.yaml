@@ -1,6 +1,6 @@
 name: firebase_cached_image
 description: Cache Manager and Cached ImageProvider for Firebase Cloud Storage Objects.
-version: 0.2.0
+version: 0.3.0
 homepage: https://github.com/imsamgarg/firebase_cached_image
 
 environment:
