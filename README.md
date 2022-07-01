@@ -6,6 +6,12 @@ Cache Manager and Cached ImageProvider for Firebase Cloud Storage Objects.
 
 Setup firebase (https://firebase.google.com/docs/flutter/setup?platform=ios).
 
+Initialize FirebaseCachedImage instance in main function.
+
+```dart
+await FirebaseCacheManager.initialize();
+```
+
 ## Firebase Image Provider
 
 If you want to show image from your cloud storage then use `Image` Widget and pass `FirebaseImageProvider` as `ImageProvider` to image argument. In `FirebaseImageProvider` pass either `FirebaseUrl` or `Reference` pointing to image in cloud storage.
@@ -15,7 +21,7 @@ If you want to show image from your cloud storage then use `Image` Widget and pa
 Image(
   image: FirebaseImageProvider(
     url: FirebaseUrl("gs://bucket_f233/logo.jpg"),
-    //Or 
+    //Or
     ref: FirebaseStorage.instance.ref().child("logo.png"),
   ),
 ),
@@ -47,13 +53,11 @@ If you want to always fetch latest image from server then pass `Source.server` t
 
 If you want to fetch image from server only it is updated after last fetched then pass `Source.cacheServerByMetadata`.
 
-
 ```dart
   source: Source.cacheServerByMetadata,
 ```
 
 By default image fetched from cach will be returned immediately then server call will be made and then latest image will be cached in background.If you want that server call will be made first then set `metadataRefreshInBackground` to `false`.
-
 
 ```dart
 options: CacheOptions(
@@ -64,27 +68,15 @@ options: CacheOptions(
 
 Image updation is checked by fetching image's metadata from server then comparing to cached image's metadata.
 
-Note: Metadata retrieval is a Class B operation in google cloud storage. you will be charged for that. Check pricing here (https://cloud.google.com/storage/pricing#price-tables).Google does offer 50,000 free Class B operations per month.
+Note: Metadata retrieval is a Class B operation in google cloud storage. you will be charged for that. Check pricing here (https://cloud.google.com/storage/pricing#price-tables) .Google does offer 50,000 free Class B operations per month.
 
-
-
-----------
+---
 
 ## Firebase Cache Manager
 
 if you want to work with any type of cloud storage file and want more functionality then use `FirebaseCacheManager`.
 
-### Set Up:
-
-Initialize FirebaseCachedImage instance in main function.
-
-```dart
-await FirebaseCacheManager.initialize();
-```
-
 Download and cache any file.
-
-*`getSingleFile` method's api is almost similar to `FirebaseImageProvider`'s.*
 
 ```dart
 final file = await FirebaseCacheManager.instance.getSingleFile(
@@ -92,9 +84,11 @@ final file = await FirebaseCacheManager.instance.getSingleFile(
 );
 print(file.fullLocalPath); // Cached file's path, can be used for sharing file
 print(file.rawData); // File's bytes (Uint8List)
+
+//getSingleFile` method's api is almost similar to `FirebaseImageProvider
 ```
 
-Download and cache file before use. Can be useful for caching frequently used image at app's load time. 
+Download and cache file before use. Can be useful for caching frequently used image at app's load time.
 
 ```dart
 await FirebaseCacheManager.instance.preCache(
@@ -139,5 +133,7 @@ FirebaseCacheManager.instance.cacheOptions = CacheOptions(
   source: Source.server,
 );
 ```
-----------
-*No support for caching in web, everything will be downloaded from server.*
+
+---
+
+_No support for caching in web, everything will be downloaded from server._
