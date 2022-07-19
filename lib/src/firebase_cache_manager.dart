@@ -11,29 +11,22 @@ import 'package:flutter/foundation.dart';
 
 /// Singleton Cache Manager for Cloud Storage Objects.
 class FirebaseCacheManager {
-  ///Singleton Instance.
-  static late final FirebaseCacheManager instance;
-  late final BaseCacheManager _cacheManager;
-  static bool _isInitialized = false;
-  FirebaseCacheManager._();
+  static int get _currentTimeInMills => DateTime.now().millisecondsSinceEpoch;
 
-  /// Global cacheOptions used for all [FirebaseImageProvider] instances
-  late CacheOptions cacheOptions;
+  static Future<T> _initCacheManager<T>(
+    Future<T> Function(BaseCacheManager manager) op,
+  ) async {
+    final cacheManager = await CacheManager().init();
+    try {
+      final value = await op(cacheManager);
 
-  /// Initialize [FirebaseCacheManager]
-  static Future<void> initialize() async {
-    if (_isInitialized) return;
-    instance = FirebaseCacheManager._();
-    instance.cacheOptions = CacheOptions(
-      shouldCache: !kIsWeb,
-      source: kIsWeb ? Source.server : Source.cacheServerByMetadata,
-    );
-    instance._cacheManager = await CacheManager().init();
-    _isInitialized = true;
-    return;
+      await cacheManager.dispose();
+      return value;
+    } on Exception {
+      await cacheManager.dispose();
+      rethrow;
+    }
   }
-
-  int get _currentTimeInMills => DateTime.now().millisecondsSinceEpoch;
 
   Future<CachedObject> _getFile({
     FirebaseUrl? url,
@@ -54,58 +47,53 @@ class FirebaseCacheManager {
       uri = url!.parsedUri;
     }
 
-    final _options = options ?? cacheOptions;
+    final _options = options ??
+        CacheOptions(
+          shouldCache: !kIsWeb,
+          source: kIsWeb ? Source.server : Source.cacheServerByMetadata,
+        );
     final _source = _options.source;
     final _shouldCache = _options.shouldCache;
 
-    if (_source == Source.server) {
-      final bytes = await _storageManager.get(maxSize);
-      return _cacheFile(uri, bytes!, shouldCache: _shouldCache);
-    }
-
-    if (_source == Source.cacheServer) {
-      final id = getUniqueId(uri.toString());
-      final image = await _cacheManager.get(id);
-
-      if (image != null && image.rawData != null) {
-        _updateLastAccessedTime(id);
-        return image;
+    return _initCacheManager((manager) async {
+      if (_source == Source.server) {
+        final bytes = await _storageManager.get(maxSize);
+        return _cacheFile(uri, bytes!, shouldCache: _shouldCache);
       }
 
-      final bytes = await _storageManager.get(maxSize);
-      return _cacheFile(uri, bytes!, shouldCache: _shouldCache);
-    }
+      if (_source == Source.cacheServer) {
+        final id = getUniqueId(uri.toString());
+        final image = await manager.get(id);
 
-    final id = getUniqueId(uri.toString());
-    final image = await _cacheManager.get(id);
+        if (image != null && image.rawData != null) {
+          manager.update(id, lastAccessedAt: _currentTimeInMills);
+          return image;
+        }
 
-    if (image == null || image.rawData == null) {
-      final bytes = await _storageManager.get(maxSize);
-      return _cacheFile(uri, bytes!, shouldCache: _shouldCache);
-    }
+        final bytes = await _storageManager.get(maxSize);
+        return _cacheFile(uri, bytes!, shouldCache: _shouldCache);
+      }
 
-    _updateLastAccessedTime(id);
+      final id = getUniqueId(uri.toString());
+      final image = await manager.get(id);
 
-    if (_options.metadataRefreshInBackground) {
-      _storageManager.getIfUpdated(image.modifiedAt, maxSize).then(
-        (bytes) {
-          if (bytes != null && _shouldCache) {
-            _updateCachedImage(id, bytes);
-          }
-        },
-      );
+      if (image == null || image.rawData == null) {
+        final bytes = await _storageManager.get(maxSize);
+        return _cacheFile(uri, bytes!, shouldCache: _shouldCache);
+      }
 
-      return image;
-    }
+      manager.update(id, lastAccessedAt: _currentTimeInMills);
 
-    final bytes = await _storageManager.getIfUpdated(image.modifiedAt, maxSize);
-    if (bytes == null) return image;
-    final newImage = image.copyWith(rawData: bytes);
+      final bytes =
+          await _storageManager.getIfUpdated(image.modifiedAt, maxSize);
+      if (bytes == null) return image;
+      final newImage = image.copyWith(rawData: bytes);
 
-    if (!_shouldCache) return newImage;
+      if (!_shouldCache) return newImage;
 
-    _updateCachedImage(id, bytes);
-    return newImage;
+      _updateCachedImage(id, bytes);
+      return newImage;
+    });
   }
 
   /// Fetch, cache and return [Uint8List] bytes for Cloud Storage File.
@@ -162,24 +150,24 @@ class FirebaseCacheManager {
       return createCachedObject(id, url: uriString, bytes: bytes);
     }
 
-    return _cacheManager.put(
-      id,
-      uri: uriString,
-      modifiedAt: _currentTimeInMills,
-      bytes: bytes,
-    );
-  }
-
-  Future<void> _updateLastAccessedTime(String id) {
-    return _cacheManager.update(id, lastAccessedAt: _currentTimeInMills);
+    return _initCacheManager((manager) {
+      return manager.put(
+        id,
+        uri: uriString,
+        modifiedAt: _currentTimeInMills,
+        bytes: bytes,
+      );
+    });
   }
 
   Future<void> _updateCachedImage(String id, Uint8List bytes) {
-    return _cacheManager.update(
-      id,
-      modifiedAt: _currentTimeInMills,
-      bytes: bytes,
-    );
+    return _initCacheManager((manager) {
+      return manager.update(
+        id,
+        modifiedAt: _currentTimeInMills,
+        bytes: bytes,
+      );
+    });
   }
 
   /// PreCache file from cloud storage
@@ -191,7 +179,6 @@ class FirebaseCacheManager {
   }) async {
     final _cacheOptions = options ??
         CacheOptions(
-          metadataRefreshInBackground: false,
           source: Source.cacheServerByMetadata,
         );
 
@@ -219,16 +206,18 @@ class FirebaseCacheManager {
     final url = uri.toString();
     final id = getUniqueId(url);
 
-    return _cacheManager.put(
-      id,
-      uri: url,
-      modifiedAt: _currentTimeInMills,
-      bytes: bytes,
-    );
+    return _initCacheManager((manager) {
+      return manager.put(
+        id,
+        uri: url,
+        modifiedAt: _currentTimeInMills,
+        bytes: bytes,
+      );
+    });
   }
 
   /// Delete all the cached files
-  Future<void> clearCache() => _cacheManager.clear();
+  Future<void> clearCache() => _initCacheManager((manager) => manager.clear());
 
   /// Delete specific file from cache
   Future<void> delete({
@@ -245,6 +234,6 @@ class FirebaseCacheManager {
     }
 
     final id = getUniqueId(uri.toString());
-    return _cacheManager.delete(id);
+    return _initCacheManager((manager) => manager.delete(id));
   }
 }

@@ -170,4 +170,7 @@ ON $_kImageCacheDb (id);
     if (bytes == null) return;
     await File(localPath).writeAsBytes(bytes);
   }
+
+  @override
+  Future<void> dispose() => db.close();
 }

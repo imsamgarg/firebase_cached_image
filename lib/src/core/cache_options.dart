@@ -17,12 +17,13 @@ class CacheOptions {
   /// get returned.
   ///
   /// Note: Only applicable if source is set to source.cacheServerByMetadata
+  @Deprecated("Not used anymore")
   final bool metadataRefreshInBackground;
 
   /// Control how file gets fetched and cached
   CacheOptions({
     this.source = Source.cacheServer,
     this.shouldCache = true,
-    this.metadataRefreshInBackground = true,
+    @Deprecated("Not used anymore") this.metadataRefreshInBackground = true,
   });
 }

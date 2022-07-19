@@ -40,4 +40,7 @@ class CacheManager extends BaseCacheManager {
     Uint8List? bytes,
     int? lastAccessedAt,
   }) async {}
+
+  @override
+  Future<void> dispose() async {}
 }

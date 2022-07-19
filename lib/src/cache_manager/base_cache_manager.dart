@@ -23,4 +23,5 @@ abstract class BaseCacheManager {
   Future<void> delete(String id);
   Future<void> clear();
   Future<BaseCacheManager> init();
+  Future<void> dispose();
 }
