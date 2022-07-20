@@ -21,7 +21,7 @@ class CacheOptions {
   final bool metadataRefreshInBackground;
 
   /// Control how file gets fetched and cached
-  CacheOptions({
+  const CacheOptions({
     this.source = Source.cacheServer,
     this.shouldCache = true,
     @Deprecated("Not used anymore") this.metadataRefreshInBackground = true,
