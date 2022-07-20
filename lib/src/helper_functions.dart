@@ -33,6 +33,7 @@ CachedObject createCachedObject(
     id: id,
     uri: url,
     modifiedAt: DateTime.now().millisecondsSinceEpoch,
+    lastAccessedAt: DateTime.now().millisecondsSinceEpoch,
     rawData: bytes,
   );
 }

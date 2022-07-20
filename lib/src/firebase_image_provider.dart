@@ -1,11 +1,4 @@
-import 'dart:typed_data';
-import 'dart:ui';
-
-import 'package:firebase_cached_image/firebase_cached_image.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+part of 'firebase_cache_manager.dart';
 
 /// Fetch, cache and return ImageProvider for Cloud Storage Image Objects.
 class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
@@ -92,13 +85,43 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   }
 
   Future<Uint8List> _fetchImage() async {
-    final image = await FirebaseCacheManager().getSingleFile(
-      url: url,
-      maxSize: maxSize,
-      ref: ref,
-      options: options,
+    final Uri uri;
+    final _ref = ref ?? url!.ref;
+
+    if (ref != null) {
+      uri = getUriFromRef(ref!);
+    } else {
+      uri = url!.parsedUri;
+    }
+
+    final urlString = uri.toString();
+    final id = getUniqueId(urlString);
+    final _options = options ?? _defaultCacheOptions;
+
+    final cacheManager = await CacheManager().init();
+    final manager = FirebaseCacheManager();
+    final cachedObject = await manager._getFile(
+      maxSize: maxSize ?? _kDefaultMaxSize,
+      id: id,
+      manager: cacheManager,
+      source: _options.source,
+      ref: _ref,
     );
-    return image.rawData!;
+
+    final bytes = cachedObject.rawData!;
+    final file = createCachedObject(id, url: urlString, bytes: bytes);
+
+    if (cachedObject.fullLocalPath != null || !_options.shouldCache) {
+      cacheManager.dispose();
+      // await manager.update(id, lastAccessedAt: _nowTime);
+      return bytes;
+    }
+
+    manager
+        ._cacheFile(manager: cacheManager, file: file)
+        .then((_) => cacheManager.dispose());
+
+    return bytes;
   }
 
   @override

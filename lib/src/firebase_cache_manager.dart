@@ -1,17 +1,26 @@
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:firebase_cached_image/src/cache_manager/base_cache_manager.dart';
 import 'package:firebase_cached_image/src/core/cached_object.dart';
-import 'package:firebase_cached_image/src/firebase_storage_manager.dart';
 import 'package:firebase_cached_image/src/helper_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+
+part 'firebase_image_provider.dart';
+
+const _kDefaultMaxSize = 10485760;
+const _defaultCacheOptions = CacheOptions(
+  shouldCache: !kIsWeb,
+  source: kIsWeb ? Source.server : Source.cacheServerByMetadata,
+);
 
 /// Singleton Cache Manager for Cloud Storage Objects.
 class FirebaseCacheManager {
-  static int get _currentTimeInMills => DateTime.now().millisecondsSinceEpoch;
+  static int get _nowTime => DateTime.now().millisecondsSinceEpoch;
 
   static Future<T> _initCacheManager<T>(
     Future<T> Function(BaseCacheManager manager) op,
@@ -29,71 +38,60 @@ class FirebaseCacheManager {
   }
 
   Future<CachedObject> _getFile({
-    FirebaseUrl? url,
-    Reference? ref,
-    CacheOptions? options,
-    int? maxSize,
+    required BaseCacheManager manager,
+    required Source source,
+    required Reference ref,
+    required int maxSize,
+    required String id,
   }) async {
-    assert(url != null || ref != null, "provide url or ref");
+    late final Uint8List? bytes;
 
-    final FirebaseStorageManager _storageManager;
-    final Uri uri;
-    final _ref = ref ?? url!.ref;
-    _storageManager = FirebaseStorageManager.fromRef(_ref);
+    if (source == Source.server) bytes = await ref.getData(maxSize);
 
-    if (ref != null) {
-      uri = getUriFromRef(ref);
-    } else {
-      uri = url!.parsedUri;
-    }
-
-    final _options = options ??
-        CacheOptions(
-          shouldCache: !kIsWeb,
-          source: kIsWeb ? Source.server : Source.cacheServerByMetadata,
-        );
-    final _source = _options.source;
-    final _shouldCache = _options.shouldCache;
-
-    return _initCacheManager((manager) async {
-      if (_source == Source.server) {
-        final bytes = await _storageManager.get(maxSize);
-        return _cacheFile(uri, bytes!, shouldCache: _shouldCache);
-      }
-
-      if (_source == Source.cacheServer) {
-        final id = getUniqueId(uri.toString());
-        final image = await manager.get(id);
-
-        if (image != null && image.rawData != null) {
-          manager.update(id, lastAccessedAt: _currentTimeInMills);
-          return image;
-        }
-
-        final bytes = await _storageManager.get(maxSize);
-        return _cacheFile(uri, bytes!, shouldCache: _shouldCache);
-      }
-
-      final id = getUniqueId(uri.toString());
+    if (source == Source.cacheServer) {
       final image = await manager.get(id);
 
-      if (image == null || image.rawData == null) {
-        final bytes = await _storageManager.get(maxSize);
-        return _cacheFile(uri, bytes!, shouldCache: _shouldCache);
+      if (image != null && image.rawData != null) {
+        manager.update(id, lastAccessedAt: _nowTime);
+        return image;
       }
 
-      manager.update(id, lastAccessedAt: _currentTimeInMills);
+      bytes = await ref.getData(maxSize);
+    }
 
-      final bytes =
-          await _storageManager.getIfUpdated(image.modifiedAt, maxSize);
-      if (bytes == null) return image;
-      final newImage = image.copyWith(rawData: bytes);
+    if (source == Source.cacheServerByMetadata) {
+      final image = await manager.get(id);
 
-      if (!_shouldCache) return newImage;
+      if (image?.rawData == null) {
+        bytes = await ref.getData(maxSize);
+      }
 
-      _updateCachedImage(id, bytes);
-      return newImage;
-    });
+      final metadata = await ref.getMetadata();
+      final updatedAt = metadata.updated?.millisecondsSinceEpoch;
+      if (updatedAt == null || updatedAt <= image!.modifiedAt) return image!;
+
+      final newBytes = await ref.getData(maxSize);
+      return CachedObject(id: id, uri: "", modifiedAt: 1, rawData: newBytes);
+    }
+
+    return CachedObject(
+      id: id,
+      uri: id,
+      modifiedAt: _nowTime,
+      rawData: bytes,
+    );
+  }
+
+  Future<void> _cacheFile({
+    required BaseCacheManager manager,
+    required CachedObject file,
+  }) {
+    return manager.update(
+      file.id,
+      bytes: file.rawData,
+      lastAccessedAt: _nowTime,
+      modifiedAt: _nowTime,
+    );
   }
 
   /// Fetch, cache and return [Uint8List] bytes for Cloud Storage File.
@@ -124,49 +122,51 @@ class FirebaseCacheManager {
 
     /// Control how image gets fetched and cached
     ///
-    /// by default it uses global [cacheOptions]
+    /// by default it uses global [_defaultCacheOptions]
     CacheOptions? options,
 
     /// Default: 10MB. The maximum size in bytes to be allocated in the device's memory for the image.
     int? maxSize,
   }) {
-    return _getFile(
-      url: url,
-      maxSize: maxSize,
-      options: options,
-      ref: ref,
-    );
-  }
+    assert(url != null || ref != null, "provide url or ref");
 
-  Future<CachedObject> _cacheFile(
-    Uri uri,
-    Uint8List bytes, {
-    required bool shouldCache,
-  }) async {
-    final uriString = uri.toString();
-    final id = getUniqueId(uriString);
+    final Uri uri;
+    final _ref = ref ?? url!.ref;
 
-    if (!shouldCache) {
-      return createCachedObject(id, url: uriString, bytes: bytes);
+    if (ref != null) {
+      uri = getUriFromRef(ref);
+    } else {
+      uri = url!.parsedUri;
     }
 
-    return _initCacheManager((manager) {
-      return manager.put(
-        id,
-        uri: uriString,
-        modifiedAt: _currentTimeInMills,
-        bytes: bytes,
-      );
-    });
-  }
+    final urlString = uri.toString();
+    final id = getUniqueId(urlString);
+    final _options = options ?? _defaultCacheOptions;
 
-  Future<void> _updateCachedImage(String id, Uint8List bytes) {
-    return _initCacheManager((manager) {
-      return manager.update(
-        id,
-        modifiedAt: _currentTimeInMills,
-        bytes: bytes,
+    return _initCacheManager((manager) async {
+      final cachedObject = await _getFile(
+        maxSize: maxSize ?? _kDefaultMaxSize,
+        id: id,
+        manager: manager,
+        source: _options.source,
+        ref: _ref,
       );
+      final bytes = cachedObject.rawData;
+      final file = createCachedObject(id, url: urlString, bytes: bytes);
+
+      if (cachedObject.fullLocalPath != null) {
+        // await manager.update(id, lastAccessedAt: _nowTime);
+        return file;
+      }
+
+      if (!_options.shouldCache) {
+        // await manager.update(id, lastAccessedAt: _nowTime);
+
+        return file;
+      }
+
+      await _cacheFile(manager: manager, file: file);
+      return file;
     });
   }
 
@@ -177,16 +177,11 @@ class FirebaseCacheManager {
     CacheOptions? options,
     int? maxSize,
   }) async {
-    final _cacheOptions = options ??
-        CacheOptions(
-          source: Source.cacheServerByMetadata,
-        );
-
-    await _getFile(
-      url: url,
+    await getSingleFile(
       maxSize: maxSize,
-      options: _cacheOptions,
+      options: options,
       ref: ref,
+      url: url,
     );
   }
 
@@ -197,8 +192,7 @@ class FirebaseCacheManager {
     SettableMetadata? metadata,
     UploadTask Function(UploadTask task)? uploadTaskCallback,
   }) async {
-    final _manager = FirebaseStorageManager.fromRef(ref);
-    UploadTask task = _manager.putData(bytes, metadata);
+    UploadTask task = ref.putData(bytes, metadata);
     task = uploadTaskCallback?.call(task) ?? task;
     await task;
 
@@ -210,7 +204,7 @@ class FirebaseCacheManager {
       return manager.put(
         id,
         uri: url,
-        modifiedAt: _currentTimeInMills,
+        modifiedAt: _nowTime,
         bytes: bytes,
       );
     });

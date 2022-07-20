@@ -1,39 +1,39 @@
-import 'dart:typed_data';
+// import 'dart:typed_data';
 
-import 'package:firebase_cached_image/src/helper_functions.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+// import 'package:firebase_cached_image/src/helper_functions.dart';
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_storage/firebase_storage.dart';
 
-const _kDefaultMaxSize = 10485760;
+// const _kDefaultMaxSize = 10485760;
 
-class FirebaseStorageManager {
-  final Reference reference;
+// class FirebaseStorageManager {
+//   final Reference reference;
 
-  factory FirebaseStorageManager.fromUri(Uri uri, {FirebaseApp? app}) {
-    final ref = getRefFromUri(uri, app);
-    return FirebaseStorageManager.fromRef(ref);
-  }
+//   factory FirebaseStorageManager.fromUri(Uri uri, {FirebaseApp? app}) {
+//     final ref = getRefFromUri(uri, app);
+//     return FirebaseStorageManager.fromRef(ref);
+//   }
 
-  FirebaseStorageManager.fromRef(this.reference);
+//   FirebaseStorageManager.fromRef(this.reference);
 
-  Future<Uint8List?> get([int? maxSize]) {
-    return reference.getData(maxSize ?? _kDefaultMaxSize);
-  }
+//   Future<Uint8List?> get([int? maxSize]) {
+//     return reference.getData(maxSize ?? _kDefaultMaxSize);
+//   }
 
-  Future<FullMetadata> getMetadata() => reference.getMetadata();
+//   Future<FullMetadata> getMetadata() => reference.getMetadata();
 
-  Future<Uint8List?> getIfUpdated(
-    int updatedAfter, [
-    int? maxSize,
-  ]) async {
-    final metadata = await getMetadata();
-    final updatedAt = metadata.updated?.millisecondsSinceEpoch;
-    if (updatedAt == null || updatedAt <= updatedAfter) return null;
+//   Future<Uint8List?> getIfUpdated(
+//     int updatedAfter, [
+//     int? maxSize,
+//   ]) async {
+//     final metadata = await getMetadata();
+//     final updatedAt = metadata.updated?.millisecondsSinceEpoch;
+//     if (updatedAt == null || updatedAt <= updatedAfter) return null;
 
-    return get(maxSize);
-  }
+//     return get(maxSize);
+//   }
 
-  UploadTask putData(Uint8List bytes, [SettableMetadata? metadata]) {
-    return reference.putData(bytes, metadata);
-  }
-}
+//   UploadTask putData(Uint8List bytes, [SettableMetadata? metadata]) {
+//     return reference.putData(bytes, metadata);
+//   }
+// }
