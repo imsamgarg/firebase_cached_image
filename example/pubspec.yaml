@@ -35,7 +35,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   firebase_cached_image:
     path: ../
-  firebase_storage: ^10.2.16
+  firebase_storage: ^11.0.4
 
 dev_dependencies:
   flutter_test:
