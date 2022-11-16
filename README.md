@@ -6,11 +6,6 @@ Cache Manager and Cached ImageProvider for Firebase Cloud Storage Objects.
 
 Setup firebase (https://firebase.google.com/docs/flutter/setup?platform=ios).
 
-Initialize FirebaseCachedImage instance in main function.
-
-```dart
-await FirebaseCacheManager.initialize();
-```
 
 ## Firebase Image Provider
 
@@ -20,9 +15,7 @@ If you want to show image from your cloud storage then use `Image` Widget and pa
 ```dart
 Image(
   image: FirebaseImageProvider(
-    url: FirebaseUrl("gs://bucket_f233/logo.jpg"),
-    //Or
-    ref: FirebaseStorage.instance.ref().child("logo.png"),
+    FirebaseUrl("gs://bucket_f233/logo.jpg")
   ),
 ),
 ```
@@ -32,12 +25,12 @@ You can alter default caching behaviour by passing `CacheOptions` to provider.
 ```dart
 Image(
   image: FirebaseImageProvider(
-    url: FirebaseUrl("gs://bucket_f233/logo.jpg"),
+    FirebaseUrl("gs://bucket_f233/logo.jpg"),
     options: CacheOptions(
-      // For Disabling Caching
-      shouldCache: false,
-      // Source from image will be fetched by default: cacheServer
-      source: Source.cacheServer,
+      // Source from image will be fetched 
+      //
+      // Default [Source.cacheServer]
+      source: Source.server,
     ),
   ),
 ),
@@ -51,17 +44,17 @@ If you want to always fetch latest image from server then pass `Source.server` t
   source: Source.server,
 ```
 
-If you want to fetch image from server only it is updated after last fetched then pass `Source.cacheServerByMetadata`.
+If you want to fetch image from server only if it is updated after last fetched then set `checkForMetadataChange` to `true`.
 
 ```dart
-  source: Source.cacheServerByMetadata,
+  checkForMetadataChange: true,
 ```
 
-By default image fetched from cach will be returned immediately then server call will be made and then latest image will be cached in background.If you want that server call will be made first then set `metadataRefreshInBackground` to `false`.
+By default image fetched from cache will be returned immediately and then server call will be made for checking if the file is updated and then latest image will be cached in background.If you want server call to be made first then set `metadataRefreshInBackground` to `false`.
 
 ```dart
 options: CacheOptions(
-  source: Source.cacheServerByMetadata,
+  checkForMetadataChange: true,
   metadataRefreshInBackground: false,
 ),
 ```
@@ -79,42 +72,33 @@ if you want to work with any type of cloud storage file and want more functional
 Download and cache any file.
 
 ```dart
-final file = await FirebaseCacheManager.instance.getSingleFile(
-  url: FirebaseUrl("gs://bucket_f233/doc.docx"),
+final file = await FirebaseCacheManager().getSingleFile(
+  FirebaseUrl("gs://bucket_f233/doc.docx"),
 );
-print(file.fullLocalPath); // Cached file's path, can be used for sharing file
-print(file.rawData); // File's bytes (Uint8List)
-
-//getSingleFile` method's api is almost similar to `FirebaseImageProvider
+print(file); // Cached file's path, can be used for sharing file
 ```
 
 Download and cache file before use. Can be useful for caching frequently used image at app's load time.
 
 ```dart
-await FirebaseCacheManager.instance.preCache(
+await FirebaseCacheManager().preCache(
   url: FirebaseUrl("gs://bucket_f233/profile_pic.jpg"),
-);
 ```
 
-Upload file and then save it to cache for later use.
+Refresh already cached file..
+  
+Checks if the file has been updated in server, then download the file if it has been updated and saves it to cache.
 
 ```dart
-final bytes = await File("path/image").readAsBytes();
-await FirebaseCacheManager.instance.uploadAndCache(
-  ref: FirebaseStorage.instance.ref().child("logo.png"),
-  bytes: bytes,
-  // Use this callback for listening to upload events
-  uploadTaskCallback: (task) {
-    task.snapshotEvents.listen((event) => print(event.bytesTransferred));
-    return task;
-  },
+await FirebaseCacheManager().refreshCachedFile(
+  url: FirebaseUrl("gs://bucket_f233/profile_pic.jpg"),
 );
 ```
 
 Delete specific file from cache.
 
 ```dart
-await FirebaseCacheManager.instance.delete(
+await FirebaseCacheManager().delete(
   url: FirebaseUrl("gs://bucket_f233/logo.jpg"),
 );
 ```
@@ -122,18 +106,24 @@ await FirebaseCacheManager.instance.delete(
 Clear all the cache.
 
 ```dart
-await FirebaseCacheManager.instance.clearCache();
+await FirebaseCacheManager().clearCache();
 ```
 
-You can also change global cacheOptions. `FirebaseImageProvider` use this cacheOptions too.
+Use custom sub-directory to save files in desired directory in system's temporary directory
 
 ```dart
-FirebaseCacheManager.instance.cacheOptions = CacheOptions(
-  shouldCache: false,
-  source: Source.server,
-);
+final manager = FirbaseCacheManager(subDir: "profile_pictures");
 ```
 
----
+Also helpful in saving files in multiple folders
+
+```dart
+final profilePicturesCacheManager = FirbaseCacheManager(subDir: "profile_pictures");
+final postsCacheManager = FirbaseCacheManager(subDir: "posts");
+
+// Only delete files in posts directory
+await postsCacheManger.clearCache();
+
+```
 
 _No support for caching in web, everything will be downloaded from server._

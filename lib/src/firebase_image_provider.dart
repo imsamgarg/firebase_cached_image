@@ -1,17 +1,17 @@
-part of 'firebase_cache_manager.dart';
+import 'dart:ui';
+
+import 'package:firebase_cached_image/firebase_cached_image.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Fetch, cache and return ImageProvider for Cloud Storage Image Objects.
 class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// Control how image gets fetched and cached
-  ///
-  /// by default it uses cacheOptions from [FirebaseCacheManager] class
-  final CacheOptions? options;
-
-  /// Cloud Storage reference to the object in the storage.
-  final Reference? ref;
+  final CacheOptions options;
 
   /// Default: 10MB. The maximum size in bytes to be allocated in the device's memory for the image.
-  final int? maxSize;
+  final int maxSize;
 
   /// Default: 1.0. The scale to display the image at.
   final double scale;
@@ -30,20 +30,18 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// FirebaseUrl("gs://bucket_f233/logo.jpg", app: Firebase.app("app_name"));
   ///
   /// ```
-  final FirebaseUrl? url;
+  final FirebaseUrl firebaseUrl;
 
   /// Fetch, cache and return ImageProvider for Cloud Storage Image Objects.
   ///
-  /// You need to specify [url] or [ref]. If you passed both then [ref] will be used. Both [url] and [ref] can not be null.
-  ///
-  /// you can control how file gets fetched and cached by passing [options].
+  /// You can control how file gets fetched and cached by passing [options].
   ///
   /// ex:
   ///
   /// ```
   ///Image(
   ///  image: FirebaseImageProvider(
-  ///    firebaseUrl: FirebaseUrl("gs://bucket_f233/logo.jpg"),
+  ///    FirebaseUrl("gs://bucket_f233/logo.jpg"),
   ///
   ///    options: CacheOptions(
   ///      source: Source.server,
@@ -59,20 +57,22 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   ///  },
   /// ),
   /// ```
-  FirebaseImageProvider({
-    this.url,
-    this.ref,
-    this.options,
+  FirebaseImageProvider(
+    this.firebaseUrl, {
+    this.options = const CacheOptions(),
     this.scale = 1.0,
-    this.maxSize,
-  }) : assert(url != null || ref != null, "provide url or ref");
+    this.maxSize = 10485760,
+  });
 
   @override
-  ImageStreamCompleter load(FirebaseImageProvider key, DecoderCallback decode) {
+  ImageStreamCompleter loadBuffer(
+    FirebaseImageProvider key,
+    DecoderBufferCallback decode,
+  ) {
     return MultiFrameImageStreamCompleter(
       codec: key._codec(decode),
       scale: key.scale,
-      debugLabel: key.url?.url ?? key.ref.toString(),
+      debugLabel: key.firebaseUrl.url.toString(),
       informationCollector: () => <DiagnosticsNode>[
         DiagnosticsProperty<FirebaseImageProvider>('Image provider', this),
         DiagnosticsProperty<FirebaseImageProvider>('Image key', key),
@@ -80,48 +80,24 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
     );
   }
 
-  Future<Codec> _codec(DecoderCallback decode) async {
-    return decode(await _fetchImage());
+  Future<Codec> _codec(DecoderBufferCallback decode) async {
+    final bytes = await _fetchImage();
+    final buffer = ImmutableBuffer.fromUint8List(bytes);
+    return decode(await buffer);
   }
 
   Future<Uint8List> _fetchImage() async {
-    final Uri uri;
-    final _ref = ref ?? url!.ref;
-
-    if (ref != null) {
-      uri = getUriFromRef(ref!);
-    } else {
-      uri = url!.parsedUri;
-    }
-
-    final urlString = uri.toString();
-    final id = getUniqueId(urlString);
-    final _options = options ?? _defaultCacheOptions;
-
-    final cacheManager = await CacheManager().init();
     final manager = FirebaseCacheManager();
-    final cachedObject = await manager._getFile(
-      maxSize: maxSize ?? _kDefaultMaxSize,
-      id: id,
-      manager: cacheManager,
-      source: _options.source,
-      ref: _ref,
+    final cachedObject = await manager.getSingleObject(
+      firebaseUrl,
+      options: options,
     );
 
-    final bytes = cachedObject.rawData!;
-    final file = createCachedObject(id, url: urlString, bytes: bytes);
-
-    if (cachedObject.fullLocalPath != null || !_options.shouldCache) {
-      cacheManager.dispose();
-      // await manager.update(id, lastAccessedAt: _nowTime);
-      return bytes;
+    if (cachedObject.rawData == null) {
+      throw Exception("");
     }
 
-    manager
-        ._cacheFile(manager: cacheManager, file: file)
-        .then((_) => cacheManager.dispose());
-
-    return bytes;
+    return cachedObject.rawData!;
   }
 
   @override
@@ -131,29 +107,26 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
 
   @override
   String toString() {
-    return 'FirebaseImageProvider(settings: $options, ref: $ref, maxSize: $maxSize, scale: $scale, url: $url)';
+    return 'FirebaseImageProvider(options: $options, maxSize: $maxSize, scale: $scale, firebaseUrl: $firebaseUrl)';
   }
 
   @override
-  bool operator ==(Object other) {
+  bool operator ==(covariant FirebaseImageProvider other) {
     if (identical(this, other)) return true;
 
-    return other is FirebaseImageProvider &&
-        other.options == options &&
-        other.ref == ref &&
+    return other.options == options &&
         other.maxSize == maxSize &&
         other.scale == scale &&
-        other.url == other.url;
+        other.firebaseUrl == firebaseUrl;
   }
 
   @override
   int get hashCode {
-    return hashValues(
+    return Object.hash(
       options.hashCode,
-      ref.hashCode,
       maxSize.hashCode,
       scale.hashCode,
-      url.hashCode,
+      firebaseUrl.hashCode,
     );
   }
 }

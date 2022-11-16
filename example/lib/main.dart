@@ -37,8 +37,8 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Center(
         child: Image(
           image: FirebaseImageProvider(
-            url: FirebaseUrl("gs://bucket_f233/logo.jpg"),
-            options: CacheOptions(
+            FirebaseUrl("gs://bucket_f233/logo.jpg"),
+            options: const CacheOptions(
               source: Source.server,
             ),
           ),

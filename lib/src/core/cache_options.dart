@@ -8,6 +8,7 @@ class CacheOptions {
   final Source source;
 
   /// Whether file should be cached or not
+  @Deprecated("Not used anymore")
   final bool shouldCache;
 
   /// if this is set to true then file fetched from cached will get returned
@@ -17,13 +18,20 @@ class CacheOptions {
   /// get returned.
   ///
   /// Note: Only applicable if source is set to source.cacheServerByMetadata
-  @Deprecated("Not used anymore")
   final bool metadataRefreshInBackground;
+
+  /// if this is set to true then a server call will be made to check whether
+  /// the file has been updated or not. If its updated then we will cache the
+  /// updated file in background.
+  ///
+  /// Default true.
+  final bool checkForMetadataChange;
 
   /// Control how file gets fetched and cached
   const CacheOptions({
+    this.checkForMetadataChange = true,
     this.source = Source.cacheServer,
-    this.shouldCache = true,
-    @Deprecated("Not used anymore") this.metadataRefreshInBackground = true,
+    @Deprecated("Not used anymore") this.shouldCache = true,
+    this.metadataRefreshInBackground = true,
   });
 }

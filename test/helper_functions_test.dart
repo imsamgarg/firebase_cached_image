@@ -25,12 +25,12 @@ void main() {
   test("getBucketFromUri", () {
     String url = "gs://bucket123/userIcon123.jpg";
     Uri uri = Uri.parse(url);
-    String bucket = getBucketFromUri(uri);
+    String bucket = getBucketFromUrl(uri);
     expect(bucket, "gs://bucket123");
 
     url = "gs://bucketname_firebaseApp-0/fileName.jpg";
     uri = Uri.parse(url);
-    bucket = getBucketFromUri(uri);
+    bucket = getBucketFromUrl(uri);
     expect(bucket, "gs://bucketname_firebaseapp-0");
   });
 
@@ -42,7 +42,7 @@ void main() {
     when(ref.fullPath).thenReturn("userIcon123.jpg");
     when(ref.bucket).thenReturn("bucket123");
 
-    final Uri uri = getUriFromRef(ref);
+    final Uri uri = getUrlFromRef(ref);
     expect(uri.toString(), url);
     expect(uri, Uri.parse(url));
 
@@ -51,7 +51,7 @@ void main() {
     when(ref.fullPath).thenReturn("folder/folder2/fileName.jpg");
     when(ref.bucket).thenReturn("bucketname_firebaseApp-0");
 
-    final resultUri = getUriFromRef(ref);
+    final resultUri = getUrlFromRef(ref);
     expect(expectedUri, resultUri);
   });
 }
