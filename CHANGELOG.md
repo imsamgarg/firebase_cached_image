@@ -1,3 +1,12 @@
+## 0.4.0
+
+- Breaking Changes
+- Singleton pattern removed
+- shouldCache removed
+- Bug fixes
+- moved ref param to FirebaseUrl
+- New methods added
+- Dependencies fix
 ## 0.3.1
 
 - readme updated
