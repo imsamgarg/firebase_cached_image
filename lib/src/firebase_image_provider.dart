@@ -10,6 +10,8 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// Control how image gets fetched and cached
   final CacheOptions options;
 
+  final FirebaseCacheManager _cacheManager;
+
   /// Default: 10MB. The maximum size in bytes to be allocated in the device's memory for the image.
   final int maxSize;
 
@@ -62,7 +64,8 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
     this.options = const CacheOptions(),
     this.scale = 1.0,
     this.maxSize = 10485760,
-  });
+    String? subDir,
+  }) : _cacheManager = FirebaseCacheManager(subDir: subDir);
 
   @override
   ImageStreamCompleter loadBuffer(
@@ -87,8 +90,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   }
 
   Future<Uint8List> _fetchImage() async {
-    final manager = FirebaseCacheManager();
-    final cachedObject = await manager.getSingleObject(
+    final cachedObject = await _cacheManager.getSingleObject(
       firebaseUrl,
       options: options,
     );
