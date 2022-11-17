@@ -5,6 +5,8 @@ import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_c
 import 'package:firebase_storage/firebase_storage.dart';
 
 class FirebaseCacheManager extends BaseFirebaseCacheManager {
+  FirebaseCacheManager({super.subDir});
+
   @override
   Future<void> clearCache() => Future.value();
 
