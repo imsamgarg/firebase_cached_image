@@ -4,12 +4,12 @@ Cache Manager and Cached ImageProvider for Firebase Cloud Storage Objects.
 
 ## Set up
 
-Setup firebase (https://firebase.google.com/docs/flutter/setup?platform=ios).
+Setup firebase (https://firebase.google.com/docs/flutter/setup).
 
 
 ## Firebase Image Provider
 
-If you want to show image from your cloud storage then use `Image` Widget and pass `FirebaseImageProvider` as `ImageProvider` to image argument. In `FirebaseImageProvider` pass either `FirebaseUrl` or `Reference` pointing to image in cloud storage.
+If you want to show image from your cloud storage then use `Image` Widget and pass `FirebaseImageProvider` as `ImageProvider` to image argument. In `FirebaseImageProvider` pass  `FirebaseUrl`. 
 `FirebaseUrl` is a class containing Google Storage Url String ex. `FirebaseUrl(gs://bucket_f233/logo.jpg)`.
 
 ```dart
@@ -82,7 +82,8 @@ Download and cache file before use. Can be useful for caching frequently used im
 
 ```dart
 await FirebaseCacheManager().preCache(
-  url: FirebaseUrl("gs://bucket_f233/profile_pic.jpg"),
+  FirebaseUrl("gs://bucket_f233/profile_pic.jpg"),
+)
 ```
 
 Refresh already cached file..
@@ -91,7 +92,7 @@ Checks if the file has been updated in server, then download the file if it has 
 
 ```dart
 await FirebaseCacheManager().refreshCachedFile(
-  url: FirebaseUrl("gs://bucket_f233/profile_pic.jpg"),
+  FirebaseUrl("gs://bucket_f233/profile_pic.jpg"),
 );
 ```
 
@@ -99,7 +100,7 @@ Delete specific file from cache.
 
 ```dart
 await FirebaseCacheManager().delete(
-  url: FirebaseUrl("gs://bucket_f233/logo.jpg"),
+  FirebaseUrl("gs://bucket_f233/logo.jpg"),
 );
 ```
 
