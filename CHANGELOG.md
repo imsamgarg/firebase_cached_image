@@ -1,3 +1,7 @@
+## 0.4.1
+
+- bug fixes
+
 ## 0.4.0
 
 - Breaking Changes
@@ -7,6 +11,7 @@
 - moved ref param to FirebaseUrl
 - New methods added
 - Dependencies fix
+
 ## 0.3.1
 
 - readme updated
