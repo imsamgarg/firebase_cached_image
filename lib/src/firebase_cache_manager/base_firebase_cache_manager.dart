@@ -8,6 +8,8 @@ abstract class BaseFirebaseCacheManager {
 
   BaseFirebaseCacheManager({this.subDir});
 
+  Future<bool> isCached(FirebaseUrl firebaseUrl);
+
   /// Fetch, cache and returns the localFilePath for Cloud Storage File.
   ///
   /// You need to specify [firebaseUrl]

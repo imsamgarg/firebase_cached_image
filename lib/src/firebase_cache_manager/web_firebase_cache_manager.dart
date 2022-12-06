@@ -44,4 +44,9 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       rawData: bytes,
     );
   }
+
+  @override
+  Future<bool> isCached(FirebaseUrl firebaseUrl) {
+    throw UnsupportedError("Not Supported On Web");
+  }
 }
