@@ -1,3 +1,7 @@
+## 0.4.2
+
+- added loadingBuilder support
+
 ## 0.4.1
 
 - bug fixes
