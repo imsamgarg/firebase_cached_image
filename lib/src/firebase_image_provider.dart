@@ -1,9 +1,9 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 /// Fetch, cache and return ImageProvider for Cloud Storage Image Objects.
 class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
@@ -72,9 +72,12 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
     FirebaseImageProvider key,
     DecoderBufferCallback decode,
   ) {
+    final chunkEvents = StreamController<ImageChunkEvent>();
+
     return MultiFrameImageStreamCompleter(
-      codec: key._codec(decode),
+      codec: _loadAsync(key, chunkEvents, decode),
       scale: key.scale,
+      chunkEvents: chunkEvents.stream,
       debugLabel: key.firebaseUrl.url.toString(),
       informationCollector: () => <DiagnosticsNode>[
         DiagnosticsProperty<FirebaseImageProvider>('Image provider', this),
@@ -83,23 +86,49 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
     );
   }
 
-  Future<Codec> _codec(DecoderBufferCallback decode) async {
-    final bytes = await _fetchImage();
-    final buffer = ImmutableBuffer.fromUint8List(bytes);
-    return decode(await buffer);
-  }
+  Future<Codec> _loadAsync(
+    FirebaseImageProvider key,
+    StreamController<ImageChunkEvent> chunkEvents,
+    DecoderBufferCallback decode,
+  ) async {
+    try {
+      chunkEvents.add(
+        const ImageChunkEvent(
+          cumulativeBytesLoaded: 0,
+          expectedTotalBytes: null,
+        ),
+      );
 
-  Future<Uint8List> _fetchImage() async {
-    final cachedObject = await _cacheManager.getSingleObject(
-      firebaseUrl,
-      options: options,
-    );
+      final cachedObject = await _cacheManager.getSingleObject(
+        firebaseUrl,
+        options: options,
+      );
 
-    if (cachedObject.rawData == null) {
-      throw Exception("");
+      final bytes = cachedObject.rawData;
+
+      if (bytes == null || bytes.isEmpty) {
+        throw Exception(
+          "FirebaseImageProvider empty file: ${firebaseUrl.url}",
+        );
+      }
+
+      chunkEvents.add(
+        ImageChunkEvent(
+          cumulativeBytesLoaded: bytes.length,
+          expectedTotalBytes: bytes.length,
+        ),
+      );
+
+      final buffer = await ImmutableBuffer.fromUint8List(bytes);
+      return decode(buffer);
+    } catch (_) {
+      scheduleMicrotask(() {
+        PaintingBinding.instance.imageCache.evict(key);
+      });
+      rethrow;
+    } finally {
+      chunkEvents.close();
     }
-
-    return cachedObject.rawData!;
   }
 
   @override
