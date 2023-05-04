@@ -142,10 +142,11 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   }
 
   @override
-  bool operator ==(covariant FirebaseImageProvider other) {
+  bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other.options == options &&
+    return other is FirebaseImageProvider &&
+        other.options == options &&
         other.maxSize == maxSize &&
         other.scale == scale &&
         other.firebaseUrl == firebaseUrl;
