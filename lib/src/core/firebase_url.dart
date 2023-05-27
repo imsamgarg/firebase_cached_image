@@ -43,15 +43,18 @@ class FirebaseUrl {
   }
 
   @override
-  String toString() => 'FirebaseUrl(url: $url, ref: $ref)';
+  String toString() => 'FirebaseUrl(url: $url, ref: $ref, uniqueId: $uniqueId)';
 
   @override
-  bool operator ==(covariant FirebaseUrl other) {
+  bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other.url == url && other.ref == ref;
+    return other is FirebaseUrl &&
+        other.url == url &&
+        other.ref == ref &&
+        other.uniqueId == uniqueId;
   }
 
   @override
-  int get hashCode => url.hashCode ^ ref.hashCode;
+  int get hashCode => url.hashCode ^ ref.hashCode ^ uniqueId.hashCode;
 }

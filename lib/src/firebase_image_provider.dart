@@ -147,6 +147,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
 
     return other is FirebaseImageProvider &&
         other.options == options &&
+        other._cacheManager == _cacheManager &&
         other.maxSize == maxSize &&
         other.scale == scale &&
         other.firebaseUrl == firebaseUrl;
@@ -155,6 +156,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   @override
   int get hashCode {
     return Object.hash(
+      _cacheManager.hashCode,
       options.hashCode,
       maxSize.hashCode,
       scale.hashCode,
