@@ -5,3 +5,8 @@ include: package:lint/analysis_options.yaml
 
 analyzer:
   exclude: [test/*.mocks.dart]
+
+linter:   
+  rules: 
+    no_leading_underscores_for_local_identifiers: false
+
