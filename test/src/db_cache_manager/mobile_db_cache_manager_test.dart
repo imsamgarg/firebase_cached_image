@@ -2,7 +2,6 @@ import 'package:firebase_cached_image/src/core/cached_object.dart';
 import 'package:firebase_cached_image/src/db_cache_manager/mobile_db_cache_manager.dart';
 import 'package:firebase_cached_image/src/helper_functions.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 CachedObject _createTempCachedObject(String url, [int? modifiedAt]) {
