@@ -1,3 +1,8 @@
+## 0.4.4
+
+- FirebaseCacheManager.isCached method added
+- Bug fixes
+
 ## 0.4.2
 
 - added loadingBuilder support
