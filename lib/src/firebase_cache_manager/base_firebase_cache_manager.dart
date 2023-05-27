@@ -23,7 +23,6 @@ abstract class BaseFirebaseCacheManager {
     /// FirebaseUrl("gs://bucket_f233/logo.jpg")
     /// ```
     FirebaseUrl firebaseUrl, {
-
     /// Control how image gets fetched and cached
     CacheOptions options = const CacheOptions(),
   });
@@ -43,7 +42,6 @@ abstract class BaseFirebaseCacheManager {
     /// FirebaseUrl("gs://bucket_f233/logo.jpg")
     /// ```
     FirebaseUrl firebaseUrl, {
-
     /// Control how image gets fetched and cached
     CacheOptions options = const CacheOptions(),
 
@@ -69,4 +67,9 @@ abstract class BaseFirebaseCacheManager {
 
   /// Delete specific file from cache
   Future<void> delete(FirebaseUrl firebaseUrl);
+
+  /// Check whether the file is cached or not.
+  ///
+  /// On web it always return false.
+  Future<bool> isCached(FirebaseUrl firebaseUrl);
 }

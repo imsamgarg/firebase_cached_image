@@ -44,4 +44,10 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       rawData: bytes,
     );
   }
+
+  @override
+  Future<bool> isCached(FirebaseUrl firebaseUrl) {
+    //Always return false on web.
+    return Future.value(false);
+  }
 }

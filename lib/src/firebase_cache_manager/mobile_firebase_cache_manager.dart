@@ -197,4 +197,15 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   Future<String> getFullLocalPath(String fileName) async {
     return join(await _cacheDirectoryPath, fileName);
   }
+
+  @override
+  Future<bool> isCached(FirebaseUrl firebaseUrl) async {
+    final manager = await _cacheManager;
+
+    final cachedObject = await manager.get(firebaseUrl.uniqueId);
+
+    if (cachedObject == null) return false;
+
+    return File(await getFullLocalPath(cachedObject.id)).existsSync();
+  }
 }
