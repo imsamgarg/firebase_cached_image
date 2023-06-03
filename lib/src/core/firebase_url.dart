@@ -1,11 +1,10 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:firebase_cached_image/src/helper_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart';
 
 /// The FirebaseUrl of the Cloud Storage image
 class FirebaseUrl {
-  // Parsed uri from firebase url
   final Uri url;
   final Reference ref;
   final String uniqueId;
@@ -19,14 +18,13 @@ class FirebaseUrl {
   ///
   ///
   /// Use [FirebaseUrl.fromReference] if you want to use reference directly.
-  factory FirebaseUrl(
-    String url, {
-    FirebaseApp? app,
-  }) {
-    final uri = Uri.parse(url);
-    final ref = getRefFromUrl(uri, app);
-    final uniqueId = getUniqueId(uri.toString());
-    return FirebaseUrl._(uri, ref, uniqueId);
+  factory FirebaseUrl(String url, {FirebaseApp? app}) {
+    final _url = Uri.parse(url);
+    final ref = getRefFromUrl(_url, app);
+    final urlStr = _url.toString();
+    final String uniqueId = getUniqueId(urlStr) + extension(urlStr);
+
+    return FirebaseUrl._(_url, ref, uniqueId);
   }
 
   FirebaseUrl._(this.url, this.ref, this.uniqueId);
@@ -37,9 +35,10 @@ class FirebaseUrl {
   /// ```
   factory FirebaseUrl.fromReference(Reference ref) {
     final url = getUrlFromRef(ref);
-    final id = getUniqueId(url.toString());
+    final urlStr = url.toString();
+    final String uniqueId = getUniqueId(urlStr) + extension(urlStr);
 
-    return FirebaseUrl._(url, ref, id);
+    return FirebaseUrl._(url, ref, uniqueId);
   }
 
   @override
