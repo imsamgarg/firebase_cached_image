@@ -1,3 +1,8 @@
+## 0.4.4
+
+- Files will be saved with it's extensions
+- Bug fixes
+
 ## 0.4.3
 
 - FirebaseCacheManager.isCached method added
