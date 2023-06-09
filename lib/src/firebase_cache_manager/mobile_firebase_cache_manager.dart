@@ -20,7 +20,7 @@ Future<String> _getLocalDir([String? subDir]) async {
     _localDir = _cachedAppDirPaths[_subDir]!;
   } else {
     final _cacheDir = await getTemporaryDirectory();
-    _localDir = join(_cacheDir.path, subDir);
+    _localDir = join(_cacheDir.path, _subDir);
     _cachedAppDirPaths.putIfAbsent(_subDir, () => _localDir);
   }
 
@@ -72,15 +72,17 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
     bytes = await firebaseUrl.ref.getData(maxSize);
 
+    final localPath = await getFullLocalPath(firebaseUrl.uniqueId);
     final cachedObject = CachedObject(
       id: firebaseUrl.uniqueId,
       url: firebaseUrl.url.toString(),
       rawData: bytes,
+      fullLocalPath: localPath,
       modifiedAt: DateTime.now().millisecondsSinceEpoch,
     );
 
     manager.put(cachedObject);
-    File(await getFullLocalPath(cachedObject.id)).writeAsBytes(bytes!);
+    File(localPath).writeAsBytes(bytes!);
     return cachedObject;
   }
 
