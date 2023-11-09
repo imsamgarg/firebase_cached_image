@@ -1,3 +1,7 @@
+## 0.4.5
+
+- fixed broken FirebaseCacheManager.delete() method ([#13](https://github.com/imsamgarg/firebase_cached_image/pull/13))
+
 ## 0.4.4
 
 - Files will be saved with it's extensions
