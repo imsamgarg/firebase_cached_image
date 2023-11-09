@@ -4,7 +4,6 @@ import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:firebase_cached_image/src/core/cached_object.dart';
 import 'package:firebase_cached_image/src/db_cache_manager/mobile_db_cache_manager.dart';
 import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_cache_manager.dart';
-import 'package:firebase_cached_image/src/helper_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -186,13 +185,12 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
   @override
   Future<void> delete(FirebaseUrl firebaseUrl) async {
-    final id = getUniqueId(firebaseUrl.url.toString());
-    final localPath = await getFullLocalPath(id);
+    final localPath = await getFullLocalPath(firebaseUrl.uniqueId);
     final manager = await _cacheManager;
 
     await Future.wait([
       File(localPath).delete(),
-      manager.delete(id),
+      manager.delete(firebaseUrl.uniqueId),
     ]);
   }
 
