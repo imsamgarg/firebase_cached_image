@@ -7,14 +7,10 @@ Uri getUrlFromRef(Reference ref) {
   return Uri.parse(link);
 }
 
-FirebaseStorage getStorageFromUrl(Uri uri, FirebaseApp? app) {
-  return FirebaseStorage.instanceFor(app: app, bucket: getBucketFromUrl(uri));
-}
-
 String getBucketFromUrl(Uri url) => '${url.scheme}://${url.authority}';
 
-Reference getRefFromUrl(Uri url, FirebaseApp? app) {
-  return getStorageFromUrl(url, app).ref(url.path);
+Reference getRefFromUrl(String url, FirebaseApp? app) {
+  return FirebaseStorage.instanceFor(app: app).refFromURL(url);
 }
 
 String getUniqueId(String url) {

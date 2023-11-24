@@ -18,9 +18,10 @@ class FirebaseUrl {
   ///
   ///
   /// Use [FirebaseUrl.fromReference] if you want to use reference directly.
+  /// Todo. add docs for google cloud url
   factory FirebaseUrl(String url, {FirebaseApp? app}) {
     final _url = Uri.parse(url);
-    final ref = getRefFromUrl(_url, app);
+    final ref = getRefFromUrl(url, app);
     final urlStr = _url.toString();
     final String uniqueId = getUniqueId(urlStr) + extension(urlStr);
 
