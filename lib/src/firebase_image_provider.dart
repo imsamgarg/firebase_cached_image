@@ -68,15 +68,33 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   }) : _cacheManager = FirebaseCacheManager(subDir: subDir);
 
   @override
+  ImageStreamCompleter loadImage(
+    FirebaseImageProvider key,
+    ImageDecoderCallback decode,
+  ) {
+    final chunkEvents = StreamController<ImageChunkEvent>();
+
+    return MultiFrameImageStreamCompleter(
+      codec: _loadAsync(key, chunkEvents, (buffer) => decode(buffer)),
+      scale: key.scale,
+      chunkEvents: chunkEvents.stream,
+      debugLabel: key.firebaseUrl.url.toString(),
+      informationCollector: () => <DiagnosticsNode>[
+        DiagnosticsProperty<FirebaseImageProvider>('Image provider', this),
+        DiagnosticsProperty<FirebaseImageProvider>('Image key', key),
+      ],
+    );
+  }
+
+  @override
   ImageStreamCompleter loadBuffer(
     FirebaseImageProvider key,
-    // ignore: deprecated_member_use
     DecoderBufferCallback decode,
   ) {
     final chunkEvents = StreamController<ImageChunkEvent>();
 
     return MultiFrameImageStreamCompleter(
-      codec: _loadAsync(key, chunkEvents, decode),
+      codec: _loadAsync(key, chunkEvents, (buffer) => decode(buffer)),
       scale: key.scale,
       chunkEvents: chunkEvents.stream,
       debugLabel: key.firebaseUrl.url.toString(),
@@ -90,8 +108,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   Future<Codec> _loadAsync(
     FirebaseImageProvider key,
     StreamController<ImageChunkEvent> chunkEvents,
-    // ignore: deprecated_member_use
-    DecoderBufferCallback decode,
+    Future<Codec> Function(ImmutableBuffer buffer) decode,
   ) async {
     try {
       chunkEvents.add(
