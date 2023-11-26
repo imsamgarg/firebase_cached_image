@@ -175,7 +175,12 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
 
     return other is FirebaseImageProvider &&
         other.options == options &&
-        other._cacheManager == _cacheManager &&
+        // * [FirebaseCacheManger] does not override == method so every instance will always going to be a unique one.
+        // * which might lead to [this] and [other] to be different even if all the other values are the same.
+        // * and also image loaded from different manager instances will always be same given other parameters are the same.
+        // * so we should not compare _cacheManager.
+
+        // other._cacheManager == _cacheManager &&
         other.maxSize == maxSize &&
         other.scale == scale &&
         other.firebaseUrl == firebaseUrl;
@@ -184,7 +189,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   @override
   int get hashCode {
     return Object.hash(
-      _cacheManager.hashCode,
+      // _cacheManager.hashCode,
       options.hashCode,
       maxSize.hashCode,
       scale.hashCode,

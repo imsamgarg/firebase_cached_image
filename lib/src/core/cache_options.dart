@@ -34,4 +34,28 @@ class CacheOptions {
     @Deprecated("Not used anymore") this.shouldCache = true,
     this.metadataRefreshInBackground = true,
   });
+
+  @override
+  String toString() {
+    return 'CacheOptions(source: $source, shouldCache: $shouldCache, metadataRefreshInBackground: $metadataRefreshInBackground, checkForMetadataChange: $checkForMetadataChange)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is CacheOptions &&
+        other.source == source &&
+        other.shouldCache == shouldCache &&
+        other.metadataRefreshInBackground == metadataRefreshInBackground &&
+        other.checkForMetadataChange == checkForMetadataChange;
+  }
+
+  @override
+  int get hashCode {
+    return source.hashCode ^
+        shouldCache.hashCode ^
+        metadataRefreshInBackground.hashCode ^
+        checkForMetadataChange.hashCode;
+  }
 }
