@@ -47,6 +47,17 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
     if (options.source == Source.server) {
       bytes = await firebaseUrl.ref.getData(maxSize);
+
+      final cachedObject = CachedObject(
+        id: firebaseUrl.uniqueId,
+        url: firebaseUrl.url.toString(),
+        modifiedAt: DateTime.now().millisecond,
+        rawData: bytes,
+      );
+
+      manager.put(cachedObject);
+
+      return cachedObject;
     }
 
     final image = await manager.get(firebaseUrl.uniqueId);
