@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Fetch, cache and return ImageProvider for Cloud Storage Image Objects.
 class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
@@ -140,10 +141,18 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
 
       final buffer = await ImmutableBuffer.fromUint8List(bytes);
       return decode(buffer);
-    } catch (_) {
+    } catch (e, s) {
       scheduleMicrotask(() {
         PaintingBinding.instance.imageCache.evict(key);
       });
+
+      if (e is PlatformException) {
+        final details = e.details;
+        if (details is Map && details["code"] == "object-not-found") {
+          throw ImageNotFoundException(firebaseUrl, e, s);
+        }
+      }
+
       rethrow;
     } finally {
       chunkEvents.close();
