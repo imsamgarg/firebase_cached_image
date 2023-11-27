@@ -63,7 +63,10 @@ abstract class BaseFirebaseCacheManager {
   Future<void> preCacheFile(FirebaseUrl firebaseUrl);
 
   /// Delete all the cached files
-  Future<void> clearCache();
+  Future<void> clearCache({
+    /// Only delete files updated before [modifiedBefore]
+    Duration? modifiedBefore,
+  });
 
   /// Delete specific file from cache
   Future<void> delete(FirebaseUrl firebaseUrl);

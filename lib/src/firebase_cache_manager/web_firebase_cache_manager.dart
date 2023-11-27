@@ -8,7 +8,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   FirebaseCacheManager({super.subDir});
 
   @override
-  Future<void> clearCache() => Future.value();
+  Future<void> clearCache({Duration? modifiedBefore}) => Future.value();
 
   @override
   Future<void> delete(FirebaseUrl firebaseUrl) => Future.value();

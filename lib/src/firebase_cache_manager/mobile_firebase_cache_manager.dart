@@ -51,7 +51,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       return CachedObject(
         id: firebaseUrl.uniqueId,
         url: firebaseUrl.url.toString(),
-        modifiedAt: DateTime.now().millisecond,
+        modifiedAt: DateTime.now().millisecondsSinceEpoch,
         rawData: bytes,
       );
     }
@@ -178,16 +178,26 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   }
 
   @override
-  Future<void> clearCache() async {
+  Future<void> clearCache({
+    Duration? modifiedBefore,
+  }) async {
     final manager = await _cacheManager;
     final dirPath = await _cacheDirectoryPath;
 
-    await Future.wait([
-      Directory(dirPath).delete(recursive: true),
-      manager.clear(),
-    ]);
+    if (modifiedBefore == null) {
+      await Future.wait([
+        Directory(dirPath).delete(recursive: true),
+        manager.clear(),
+      ]);
 
-    await Directory(dirPath).create();
+      await Directory(dirPath).create();
+      return;
+    }
+
+    final paths = await manager.clear(modifiedBefore: modifiedBefore);
+    final _futures = paths!.map((e) => File(e).delete()).toList();
+
+    await Future.wait(_futures);
   }
 
   @override
