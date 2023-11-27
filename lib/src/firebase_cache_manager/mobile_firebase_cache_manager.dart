@@ -63,13 +63,11 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
       if (file.existsSync()) {
         if (options.checkForMetadataChange) {
-          final refreshImageFuture = _refreshCachedFile(
+          await _refreshCachedFile(
             firebaseUrl,
             manager: manager,
             cachedObject: image,
           );
-
-          if (!options.metadataRefreshInBackground) await refreshImageFuture;
         }
 
         return image.copyWith(rawData: await file.readAsBytes());
@@ -110,13 +108,11 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
     /// Refresh cache file in background
     if (options.checkForMetadataChange) {
-      final refreshFileFuture = _refreshCachedFile(
+      await _refreshCachedFile(
         firebaseUrl,
         manager: manager,
         cachedObject: cachedObject,
       );
-
-      if (!options.metadataRefreshInBackground) await refreshFileFuture;
     }
 
     return getFullLocalPath(firebaseUrl.uniqueId);

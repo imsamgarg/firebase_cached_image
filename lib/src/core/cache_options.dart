@@ -14,6 +14,7 @@ class CacheOptions {
   /// get returned.
   ///
   /// Note: Only applicable if checkForMetadataChange is set to true
+  @Deprecated("Field not used anymore")
   final bool metadataRefreshInBackground;
 
   /// if this is set to true then a server call will be made to check whether
@@ -27,6 +28,7 @@ class CacheOptions {
   const CacheOptions({
     this.checkForMetadataChange = true,
     this.source = Source.cacheServer,
+    @Deprecated("Field not used anymore")
     this.metadataRefreshInBackground = true,
   });
 
