@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:firebase_cached_image/firebase_cached_image.dart';
+import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_cache_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,6 +36,11 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// ```
   final FirebaseUrl firebaseUrl;
 
+  /// Use this to save files in desired directory in system's temporary directory
+  ///
+  /// Default: [kDefaultImageCacheDir]
+  final String subDir;
+
   /// Fetch, cache and return ImageProvider for Cloud Storage Image Objects.
   ///
   /// You can control how file gets fetched and cached by passing [options].
@@ -65,7 +71,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
     this.options = const CacheOptions(),
     this.scale = 1.0,
     this.maxSize = 10485760,
-    String? subDir,
+    this.subDir = kDefaultImageCacheDir,
   }) : _cacheManager = FirebaseCacheManager(subDir: subDir);
 
   @override
@@ -183,7 +189,8 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
         // other._cacheManager == _cacheManager &&
         other.maxSize == maxSize &&
         other.scale == scale &&
-        other.firebaseUrl == firebaseUrl;
+        other.firebaseUrl == firebaseUrl &&
+        other.subDir == subDir;
   }
 
   @override
@@ -194,6 +201,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
       maxSize.hashCode,
       scale.hashCode,
       firebaseUrl.hashCode,
+      subDir.hashCode,
     );
   }
 }

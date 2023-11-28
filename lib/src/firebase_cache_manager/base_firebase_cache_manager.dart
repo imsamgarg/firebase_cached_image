@@ -1,12 +1,14 @@
 import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:firebase_cached_image/src/core/cached_object.dart';
 
+const kDefaultImageCacheDir = "flutter_cached_image";
+
 /// [FirebaseCacheManager]
 abstract class BaseFirebaseCacheManager {
   /// Use this to save files in desired directory in system's temporary directory
-  final String? subDir;
+  final String subDir;
 
-  BaseFirebaseCacheManager({this.subDir});
+  BaseFirebaseCacheManager({this.subDir = kDefaultImageCacheDir});
 
   /// Fetch, cache and returns the localFilePath for Cloud Storage File.
   ///

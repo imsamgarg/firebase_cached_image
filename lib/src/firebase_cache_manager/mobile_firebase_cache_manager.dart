@@ -8,11 +8,9 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
-const _kImageCacheDir = "flutter_cached_image";
 final _cachedAppDirPaths = <String, String>{};
 
-Future<String> _getLocalDir([String? subDir]) async {
-  final _subDir = subDir ?? _kImageCacheDir;
+Future<String> _getLocalDir(String _subDir) async {
   String _localDir;
 
   if (_cachedAppDirPaths.containsKey(_subDir)) {
