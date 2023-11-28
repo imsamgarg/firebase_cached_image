@@ -21,12 +21,12 @@ class CacheOptions {
   /// the file has been updated or not. If its updated then we will cache the
   /// updated file in background.
   ///
-  /// Default true.
+  /// Default false.
   final bool checkForMetadataChange;
 
   /// Control how file gets fetched and cached
   const CacheOptions({
-    this.checkForMetadataChange = true,
+    this.checkForMetadataChange = false,
     this.source = Source.cacheServer,
     @Deprecated("Field not used anymore")
     this.metadataRefreshInBackground = true,
