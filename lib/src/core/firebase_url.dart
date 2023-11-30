@@ -13,12 +13,14 @@ class FirebaseUrl {
   ///
   /// ```
   /// FirebaseUrl("gs://bucket_f233/logo.jpg")
+  /// FirebaseUrl("https://firebasestorage.googleapis.com/b/bucket/o/logo.jpg")
+  ///
   /// ```
-  /// you can specify [FirebaseApp] if you are multiple firebase projects in app
+  /// The [url] can either be a HTTP or Google Storage URL pointing to an object.
+  /// You can specify [FirebaseApp] if you are multiple firebase projects in app
   ///
   ///
   /// Use [FirebaseUrl.fromReference] if you want to use reference directly.
-  /// Todo. add docs for google cloud url
   factory FirebaseUrl(String url, {FirebaseApp? app}) {
     final _url = Uri.parse(url);
     final ref = getRefFromUrl(url, app);

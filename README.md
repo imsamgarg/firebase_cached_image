@@ -6,10 +6,9 @@ Cache Manager and Cached ImageProvider for Firebase Cloud Storage Objects.
 
 Setup firebase (https://firebase.google.com/docs/flutter/setup).
 
-
 ## Firebase Image Provider
 
-If you want to show image from your cloud storage then use `Image` Widget and pass `FirebaseImageProvider` as `ImageProvider` to image argument. In `FirebaseImageProvider` pass  `FirebaseUrl`. 
+If you want to show image from your cloud storage then use `Image` Widget and pass `FirebaseImageProvider` as `ImageProvider` to image argument. In `FirebaseImageProvider` pass `FirebaseUrl`.
 `FirebaseUrl` is a class containing Google Storage Url String ex. `FirebaseUrl(gs://bucket_f233/logo.jpg)`.
 
 ```dart
@@ -20,6 +19,14 @@ Image(
 ),
 ```
 
+You can declare `FirebaseUrl` in following ways:
+
+```dart
+FirebaseUrl("gs://bucket_f233/logo.jpg")
+FirebaseUrl("https://firebasestorage.googleapis.com/b/bucket/o/logo.jpg")
+FirebaseUrl.fromReference(FirebaseStorage.instance.ref("images/image.jpg"));
+```
+
 You can alter default caching behaviour by passing `CacheOptions` to provider.
 
 ```dart
@@ -27,11 +34,37 @@ Image(
   image: FirebaseImageProvider(
     FirebaseUrl("gs://bucket_f233/logo.jpg"),
     options: CacheOptions(
-      // Source from image will be fetched 
+      // Source from image will be fetched
       //
       // Default [Source.cacheServer]
       source: Source.server,
     ),
+    errorBuilder: (context, error, stackTrace) {
+      // [ImageNotFoundException] will be thrown if image does not exist on server.
+      if (error is ImageNotFoundException) {
+        // Handle ImageNotFoundException and show a user-friendly message.
+        return const Text('Image not found on Cloud Storage.');
+      } else {
+        // Handle other errors.
+        return Text('Error loading image: $error');
+      }
+    },
+    // The loading progress may not be accurate as Firebase Storage API
+    // does not provide a stream of bytes downloaded. The progress updates only at the start and end of the loading process.
+    loadingBuilder: (_, Widget child, ImageChunkEvent? loadingProgress) {
+      if (loadingProgress == null) {
+        // Show the loaded image if loading is complete.
+        return child;
+      } else {
+        // Show a loading indicator with progress information.
+        return CircularProgressIndicator(
+          value: loadingProgress.expectedTotalBytes != null
+              ? loadingProgress.cumulativeBytesLoaded /
+                  (loadingProgress.expectedTotalBytes ?? 1)
+              : null,
+        );
+      }
+    },
   ),
 ),
 ```
@@ -50,16 +83,7 @@ If you want to fetch image from server only if it is updated after last fetched 
   checkForMetadataChange: true,
 ```
 
-By default image fetched from cache will be returned immediately and then server call will be made for checking if the file is updated and then latest image will be cached in background.If you want server call to be made first then set `metadataRefreshInBackground` to `false`.
-
-```dart
-options: CacheOptions(
-  checkForMetadataChange: true,
-  metadataRefreshInBackground: false,
-),
-```
-
-Image updation is checked by fetching image's metadata from server then comparing to cached image's metadata.
+Image updation is checked by fetching image's metadata (modified timestamp) from server then comparing to cached image's metadata (modified timestamp).
 
 Note: Metadata retrieval is a Class B operation in google cloud storage. you will be charged for that. Check pricing here (https://cloud.google.com/storage/pricing#price-tables) .Google does offer 50,000 free Class B operations per month.
 
@@ -87,7 +111,7 @@ await FirebaseCacheManager().preCache(
 ```
 
 Refresh already cached file..
-  
+
 Checks if the file has been updated in server, then download the file if it has been updated and saves it to cache.
 
 ```dart
@@ -110,7 +134,7 @@ Clear all the cache.
 await FirebaseCacheManager().clearCache();
 ```
 
-Use custom sub-directory to save files in desired directory in system's temporary directory
+Use custom sub-directory to save files in desired directory in system's temporary directory. Default is "flutter_cached_image"
 
 ```dart
 final manager = FirbaseCacheManager(subDir: "profile_pictures");

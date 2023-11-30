@@ -6,6 +6,8 @@ const kDefaultImageCacheDir = "flutter_cached_image";
 /// [FirebaseCacheManager]
 abstract class BaseFirebaseCacheManager {
   /// Use this to save files in desired directory in system's temporary directory
+  ///
+  /// Default: ["flutter_cached_image"]
   final String subDir;
 
   BaseFirebaseCacheManager({this.subDir = kDefaultImageCacheDir});

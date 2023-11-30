@@ -25,6 +25,8 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// example:
   /// ```
   /// FirebaseUrl("gs://bucket_f233/logo.jpg")
+  /// FirebaseUrl("https://firebasestorage.googleapis.com/b/bucket/o/logo.jpg")
+  /// FirebaseUrl.fromReference(FirebaseStorage.instance.ref("images/image.jpg"));
   /// ```
   ///
   /// you can specify [FirebaseApp] if you are multiple firebase projects in app
@@ -32,13 +34,14 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   ///
   /// ```
   /// FirebaseUrl("gs://bucket_f233/logo.jpg", app: Firebase.app("app_name"));
+  /// FirebaseUrl("https://firebasestorage.googleapis.com/b/bucket/o/logo.jpg", app: Firebase.app("app_name"));
   ///
   /// ```
   final FirebaseUrl firebaseUrl;
 
   /// Use this to save files in desired directory in system's temporary directory
   ///
-  /// Default: [kDefaultImageCacheDir]
+  /// Default: ["flutter_cached_image"]
   final String subDir;
 
   /// Fetch, cache and return ImageProvider for Cloud Storage Image Objects.
@@ -48,23 +51,51 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// ex:
   ///
   /// ```
-  ///Image(
-  ///  image: FirebaseImageProvider(
-  ///    FirebaseUrl("gs://bucket_f233/logo.jpg"),
+  /// Image(
+  ///   image: FirebaseImageProvider(
+  ///     FirebaseUrl("gs://your_bucket/your_image.jpg"),
   ///
-  ///    options: CacheOptions(
-  ///      source: Source.server,
-  ///    ),
-  ///  ),
+  ///     // Specify CacheOptions to control file fetching and caching behavior.
+  ///     options: const CacheOptions(
+  ///       // Always fetch the latest file from the server and do not cache the file.
+  ///       // Default is Source.cacheServer, which will try to fetch the image from the cache and then hit the server if the image is not found in the cache.
+  ///       source: Source.server,
   ///
-  ///  // you will need to use [Image.frameBuilder] for showing any widget while image is loading.
-  ///  // [loadingBuilder] won't work because of firebase_storage implementation.
-  ///  frameBuilder: (_, child, frame, __) {
-  ///    if (frame == null) return child;
+  ///       // Check if the image is updated on the server or not. If updated, then download the latest image; otherwise, use the cached image.
+  ///       // Will only be used if the options.source is Source.cacheServer.
+  ///       checkForMetadataChange: true,
+  ///     ),
   ///
-  ///    return const CircularProgressIndicator();
-  ///  },
-  /// ),
+  ///     // Use this to save files in the desired directory in the system's temporary directory.
+  ///     // Optional. Default is "flutter_cached_image".
+  ///     subDir: "custom_cache_directory",
+  ///   ),
+  ///   errorBuilder: (context, error, stackTrace) {
+  ///     // [ImageNotFoundException] will be thrown if the image does not exist on the server.
+  ///     if (error is ImageNotFoundException) {
+  ///       // Handle ImageNotFoundException and show a user-friendly message.
+  ///       return const Text('Image not found on Cloud Storage.');
+  ///     } else {
+  ///       // Handle other errors.
+  ///       return Text('Error loading image: $error');
+  ///     }
+  ///   },
+  ///   // The loading progress may not be accurate as Firebase Storage API
+  ///   // does not provide a stream of bytes downloaded. The progress updates only at the start and end of the loading process.
+  ///   loadingBuilder: (_, Widget child, ImageChunkEvent? loadingProgress) {
+  ///     if (loadingProgress == null) {
+  ///       // Show the loaded image if loading is complete.
+  ///       return child;
+  ///     } else {
+  ///       // Show a loading indicator with progress information.
+  ///       return CircularProgressIndicator(
+  ///         value: loadingProgress.expectedTotalBytes != null
+  ///             ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)
+  ///             : null,
+  ///       );
+  ///     }
+  ///   },
+  /// )
   /// ```
   FirebaseImageProvider(
     this.firebaseUrl, {
