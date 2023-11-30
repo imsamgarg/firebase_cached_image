@@ -181,7 +181,11 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     if (modifiedBefore == null) {
       await Future.wait([
         Directory(dirPath).delete(recursive: true),
-        manager.clear(),
+
+        // Todo. implement a way to only delete rows with subDir equal to this [subDir]
+        //
+        // It will clear the entire database table that we don't want
+        // manager.clear(),
       ]);
 
       await Directory(dirPath).create();
