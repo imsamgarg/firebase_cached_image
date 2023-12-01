@@ -38,7 +38,7 @@ class MobileDbCacheManager {
   Future<List<String>?> clear({Duration? modifiedBefore}) async {
     if (modifiedBefore != null) {
       final millis =
-          DateTime.now().subtract(modifiedBefore).millisecondsSinceEpoch;
+          getNowTimeFunc().subtract(modifiedBefore).millisecondsSinceEpoch;
 
       final data = await db.query(
         tableName,
@@ -108,4 +108,10 @@ ON $tableName (id);
   }
 
   Future<void> dispose() => db.close();
+
+  @visibleForTesting
+  late DateTime Function() getNowTimeFunc = getNowTime;
+
+  @visibleForTesting
+  DateTime getNowTime() => DateTime.now();
 }

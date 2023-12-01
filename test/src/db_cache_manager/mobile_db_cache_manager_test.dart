@@ -4,10 +4,15 @@ import 'package:firebase_cached_image/src/helper_functions.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-CachedObject _createTempCachedObject(String url, [int? modifiedAt]) {
+CachedObject _createTempCachedObject(
+  String url, [
+  int? modifiedAt,
+  String? localPath,
+]) {
   return CachedObject(
     id: getUniqueId(url),
     url: url,
+    fullLocalPath: localPath,
     modifiedAt: modifiedAt ?? DateTime.now().millisecondsSinceEpoch,
   );
 }
@@ -23,9 +28,13 @@ void main() {
   late final Database db;
   late final MobileDbCacheManager manager;
 
-  Future<CachedObject> putTempCachedObject(String fileName) {
+  Future<CachedObject> putTempCachedObject(
+    String fileName, {
+    int? modifiedAt,
+    String? localPath,
+  }) {
     final url = _getTempUrl(fileName);
-    return manager.put(_createTempCachedObject(url));
+    return manager.put(_createTempCachedObject(url, modifiedAt, localPath));
   }
 
   setUpAll(() async {
@@ -142,6 +151,70 @@ void main() {
     expect(cachedObject, _dbObject);
   });
 
+  group("clear", () {
+    test("objects with modifiedBefore filter", () async {
+      final dateTime = DateTime.now();
+
+      manager.getNowTimeFunc = () {
+        return dateTime;
+      };
+
+      final files = List.generate(
+        20,
+        (index) {
+          return dateTime.subtract(Duration(minutes: index + 1));
+        },
+      );
+
+      final objects = await Future.wait(
+        files.map(
+          (e) => putTempCachedObject(
+            "file_$e.jpg",
+            modifiedAt: e.millisecondsSinceEpoch,
+            localPath: "path_$e.jpg",
+          ),
+        ),
+      );
+
+      const modifiedBefore = Duration(minutes: 10);
+      final modifiedTime = dateTime.subtract(modifiedBefore);
+
+      final dbDeletedPaths =
+          await manager.clear(modifiedBefore: modifiedBefore);
+
+      final deletedObjects = objects
+          .where(
+            (value) => value.modifiedAt < modifiedTime.millisecondsSinceEpoch,
+          )
+          .toList();
+
+      expect(deletedObjects.length, dbDeletedPaths?.length);
+
+      expect(
+        deletedObjects.map((e) => e.fullLocalPath).toSet(),
+        dbDeletedPaths?.toSet(),
+      );
+    });
+
+    test("all objects without modified filter", () async {
+      final objects = await Future.wait(
+        List.generate(10, (index) => putTempCachedObject("file$index.jpg")),
+      );
+
+      await manager.clear();
+
+      for (final obj in objects) {
+        final dbObj = await manager.get(obj.id);
+
+        expect(null, dbObj);
+      }
+    });
+  });
+
   tearDownAll(() => db.close());
-  tearDown(() => _cleanUp(db));
+  tearDown(() {
+    //Revert back to its original value
+    manager.getNowTimeFunc = manager.getNowTime;
+    return _cleanUp(db);
+  });
 }
