@@ -42,7 +42,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// Use this to save files in desired directory in system's temporary directory
   ///
   /// Default: ["flutter_cached_image"]
-  final String subDir;
+  final String _subDir;
 
   /// Fetch, cache and return ImageProvider for Cloud Storage Image Objects.
   ///
@@ -102,8 +102,13 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
     this.options = const CacheOptions(),
     this.scale = 1.0,
     this.maxSize = 10485760,
-    this.subDir = kDefaultImageCacheDir,
-  }) : _cacheManager = FirebaseCacheManager(subDir: subDir);
+
+    /// Use this to save files in desired directory in system's temporary directory
+    ///
+    /// Default: ["flutter_cached_image"]
+    String? subDir,
+  })  : _cacheManager = FirebaseCacheManager(subDir: subDir),
+        _subDir = subDir ?? kDefaultImageCacheDir;
 
   @override
   ImageStreamCompleter loadImage(
@@ -221,7 +226,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
         other.maxSize == maxSize &&
         other.scale == scale &&
         other.firebaseUrl == firebaseUrl &&
-        other.subDir == subDir;
+        other._subDir == _subDir;
   }
 
   @override
@@ -232,7 +237,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
       maxSize.hashCode,
       scale.hashCode,
       firebaseUrl.hashCode,
-      subDir.hashCode,
+      _subDir.hashCode,
     );
   }
 }

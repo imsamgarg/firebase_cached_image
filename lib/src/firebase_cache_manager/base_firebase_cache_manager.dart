@@ -8,9 +8,9 @@ abstract class BaseFirebaseCacheManager {
   /// Use this to save files in desired directory in system's temporary directory
   ///
   /// Default: ["flutter_cached_image"]
-  final String subDir;
+  final String? subDir;
 
-  BaseFirebaseCacheManager({this.subDir = kDefaultImageCacheDir});
+  BaseFirebaseCacheManager({this.subDir});
 
   /// Fetch, cache and returns the localFilePath for Cloud Storage File.
   ///
