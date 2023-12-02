@@ -1,3 +1,17 @@
+## 0.5.0
+
+- Implemented `ImageProvider.loadImage` method
+- Fixed downloading image twice when the source is Source.server
+- Do no cache file if the source is Source.server
+- `FirebaseImageProvider` instance equality issue fixed
+- CacheOptions.shouldCache field removed (breaking)
+- CacheOptions.checkForMetadataChange is not false by default (breaking)
+- Deprecated CacheOptions.metadataRefreshInBackground field (will remove this field in future)
+- Added modifiedBefore arg in FirebaseCacheManager.clearCache method
+- Added basic error handling in `FirebaseImageProvider`, Now you can check if the error is `ImageNotFoundException` in Image.errorBuilder callback to indicate file not found on the server.
+- FirebaseUrl() constructor now support both firebase or google storage url
+- Fixed `FirebaseCacheManager.clearCache` method not respecting the subDir field and clearing the entire cache
+
 ## 0.4.5
 
 - fixed broken FirebaseCacheManager.delete() method ([#13](https://github.com/imsamgarg/firebase_cached_image/pull/13))
