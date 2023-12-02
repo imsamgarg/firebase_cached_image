@@ -77,7 +77,7 @@ If you want to always fetch latest image from server then pass `Source.server` t
   source: Source.server,
 ```
 
-If you want to fetch image from server only if it is updated after last fetched then set `checkForMetadataChange` to `true`.
+If you want to fetch image from server only if it is updated after last fetched then set `checkForMetadataChange` to `false`.
 
 ```dart
   checkForMetadataChange: true,
