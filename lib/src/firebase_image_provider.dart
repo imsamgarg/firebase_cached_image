@@ -12,8 +12,6 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// Control how image gets fetched and cached
   final CacheOptions options;
 
-  final FirebaseCacheManager _cacheManager;
-
   /// Default: 10MB. The maximum size in bytes to be allocated in the device's memory for the image.
   final int maxSize;
 
@@ -107,8 +105,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
     ///
     /// Default: ["flutter_cached_image"]
     String? subDir,
-  })  : _cacheManager = FirebaseCacheManager(subDir: subDir),
-        _subDir = subDir ?? kDefaultImageCacheDir;
+  }) : _subDir = subDir ?? kDefaultImageCacheDir;
 
   @override
   ImageStreamCompleter loadImage(
@@ -161,7 +158,8 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
         ),
       );
 
-      final cachedObject = await _cacheManager.getSingleObject(
+      final cachedObject =
+          await FirebaseCacheManager(subDir: _subDir).getSingleObject(
         firebaseUrl,
         options: options,
       );
@@ -217,12 +215,6 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
 
     return other is FirebaseImageProvider &&
         other.options == options &&
-        // * [FirebaseCacheManger] does not override == method so every instance will always going to be a unique one.
-        // * which might lead to [this] and [other] to be different even if all the other values are the same.
-        // * and also image loaded from different manager instances will always be same given other parameters are the same.
-        // * so we should not compare _cacheManager.
-
-        // other._cacheManager == _cacheManager &&
         other.maxSize == maxSize &&
         other.scale == scale &&
         other.firebaseUrl == firebaseUrl &&
@@ -232,7 +224,6 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   @override
   int get hashCode {
     return Object.hash(
-      // _cacheManager.hashCode,
       options.hashCode,
       maxSize.hashCode,
       scale.hashCode,
