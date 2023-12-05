@@ -206,7 +206,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
 
   @override
   String toString() {
-    return 'FirebaseImageProvider(options: $options, maxSize: $maxSize, scale: $scale, firebaseUrl: $firebaseUrl)';
+    return 'FirebaseImageProvider(options: $options, maxSize: $maxSize, scale: $scale, firebaseUrl: $firebaseUrl, subDir: $_subDir)';
   }
 
   @override
