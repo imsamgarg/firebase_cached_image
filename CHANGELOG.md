@@ -1,3 +1,8 @@
+## 0.5.1
+
+- Initiate FIrebaseCacheManager in load method in FirebaseImageProvider
+- Added subDir field to FirebaseImageProvider's toString() output
+
 ## 0.5.0
 
 - Implemented `ImageProvider.loadImage` method
