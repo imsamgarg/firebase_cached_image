@@ -1,3 +1,7 @@
+## 0.5.2
+
+- Upgrade uuid dependency to >=3.0.0 <5.0.0 ([#14](https://github.com/imsamgarg/firebase_cached_image/pull/14))
+
 ## 0.5.1
 
 - Initiate FIrebaseCacheManager in load method in FirebaseImageProvider
