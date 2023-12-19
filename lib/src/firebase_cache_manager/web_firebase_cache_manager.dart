@@ -1,10 +1,12 @@
+import 'dart:io';
+
 import 'package:firebase_cached_image/src/core/cache_options.dart';
 import 'package:firebase_cached_image/src/core/cached_object.dart';
 import 'package:firebase_cached_image/src/core/firebase_url.dart';
 import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_cache_manager.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
-class FirebaseCacheManager extends BaseFirebaseCacheManager {
+class FirebaseCacheManager extends BaseFirebaseCacheManager{
   FirebaseCacheManager({super.subDir});
 
   @override
@@ -27,6 +29,9 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
   @override
   Future<void> refreshCachedFile(FirebaseUrl firebaseUrl) => Future.value();
+
+  @override
+  Future<void> copyFileToCache(File fileToCache, FirebaseUrl firebaseUrl) => Future.value();
 
   @override
   Future<CachedObject> getSingleObject(

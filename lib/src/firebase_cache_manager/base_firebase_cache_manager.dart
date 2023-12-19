@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:firebase_cached_image/src/core/cached_object.dart';
 
@@ -74,6 +76,12 @@ abstract class BaseFirebaseCacheManager {
 
   /// Delete specific file from cache
   Future<void> delete(FirebaseUrl firebaseUrl);
+
+  /// Add file to cache
+  ///
+  /// When uploading the item to Firebase Storage, you can also add it to the cache
+  /// This prevents the user from having to download the file again after uploading it
+  Future<void> copyFileToCache(File fileToCache, FirebaseUrl firebaseUrl);
 
   /// Check whether the file is cached or not.
   ///

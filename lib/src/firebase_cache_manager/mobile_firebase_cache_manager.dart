@@ -209,6 +209,25 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     ]);
   }
 
+  @override
+  Future<void> copyFileToCache(
+      File fileToCache, FirebaseUrl firebaseUrl,) async {
+    final manager = await _cacheManager;
+    final localPath = await getFullLocalPath(firebaseUrl.uniqueId);
+
+    await Future.wait([
+      fileToCache.copy(localPath),
+      manager.put(
+        CachedObject(
+          id: firebaseUrl.uniqueId,
+          fullLocalPath: localPath,
+          url: firebaseUrl.url.toString(),
+          modifiedAt: DateTime.now().millisecondsSinceEpoch,
+        ),
+      ),
+    ]);
+  }
+
   Future<String> getFullLocalPath(String fileName) async {
     return join(await _cacheDirectoryPath, fileName);
   }
