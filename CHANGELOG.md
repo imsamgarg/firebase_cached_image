@@ -1,3 +1,7 @@
+## 0.5.3
+
+- Fixed bug in `FirebaseCacheManager.clearCache` method not checking for whether the fix exists or not.
+
 ## 0.5.2
 
 - Upgrade uuid dependency to >=3.0.0 <5.0.0 ([#14](https://github.com/imsamgarg/firebase_cached_image/pull/14))
