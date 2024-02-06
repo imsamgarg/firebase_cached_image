@@ -104,6 +104,11 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       return _downloadToCache(firebaseUrl, manager: manager);
     }
 
+    final file = File(await getFullLocalPath(firebaseUrl.uniqueId));
+    if (!file.existsSync()) {
+      return _downloadToCache(firebaseUrl, manager: manager);
+    }
+
     /// Refresh cache file in background
     if (options.checkForMetadataChange) {
       await _refreshCachedFile(
