@@ -6,36 +6,32 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
-String? _cachedDbPath;
-
 class MobileDbCacheManager {
-  final Database db;
+  final Future<Database> _db;
 
-  MobileDbCacheManager._(this.db);
+  MobileDbCacheManager.init() : _db = _getDb();
 
   @visibleForTesting
   static const tableName = "flutter_cached_images";
 
   @visibleForTesting
-  MobileDbCacheManager.test(this.db);
+  MobileDbCacheManager.test(this._db);
 
-  static Future<MobileDbCacheManager> init([String? subDir]) async {
-    final _dbPath = _cachedDbPath ?? await _getDatabasePath();
-    _cachedDbPath = _dbPath;
+  static Future<Database> _getDb() async {
+    final _dbPath = await _getDatabasePath();
 
-    final db = await openDatabase(
+    return openDatabase(
       _dbPath,
       onCreate: createDb,
       version: 1,
     );
-
-    return MobileDbCacheManager._(db);
   }
 
   static Future<String> _getDatabasePath() async =>
       join((await getTemporaryDirectory()).path, "$tableName.db");
 
   Future<List<String>?> clear({Duration? modifiedBefore}) async {
+    final db = await _db;
     if (modifiedBefore != null) {
       final millis =
           getNowTimeFunc().subtract(modifiedBefore).millisecondsSinceEpoch;
@@ -57,11 +53,12 @@ class MobileDbCacheManager {
     return null;
   }
 
-  Future<void> delete(String id) {
-    return db.delete(tableName, where: 'id = ?', whereArgs: [id]);
+  Future<void> delete(String id) async {
+    (await _db).delete(tableName, where: 'id = ?', whereArgs: [id]);
   }
 
   Future<CachedObject?> get(String id) async {
+    final db = await _db;
     final maps = await db.query(
       tableName,
       where: 'id = ?',
@@ -76,6 +73,7 @@ class MobileDbCacheManager {
   /// This method is used for both insertion and updation...
   Future<CachedObject> put(CachedObject cachedObject) async {
     final data = cachedObject.toMap()..remove("rawData");
+    final db = await _db;
 
     await db.insert(
       tableName,
@@ -107,7 +105,7 @@ ON $tableName (id);
     );
   }
 
-  Future<void> dispose() => db.close();
+  Future<void> dispose() async => (await _db).close();
 
   @visibleForTesting
   late DateTime Function() getNowTimeFunc = getNowTime;

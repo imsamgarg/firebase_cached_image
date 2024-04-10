@@ -42,7 +42,7 @@ void main() {
     databaseFactory = databaseFactoryFfi;
     db = await openDatabase(inMemoryDatabasePath);
     await MobileDbCacheManager.createDb(db, 1);
-    manager = MobileDbCacheManager.test(db);
+    manager = MobileDbCacheManager.test(Future.value(db));
   });
 
   test('cache hit', () async {

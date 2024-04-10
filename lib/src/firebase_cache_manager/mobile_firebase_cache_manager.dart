@@ -28,7 +28,7 @@ Future<String> _getLocalDir(String _subDir) async {
 
 class FirebaseCacheManager extends BaseFirebaseCacheManager {
   FirebaseCacheManager({super.subDir})
-      : _cacheManager = MobileDbCacheManager.init(),
+      : _cacheManager = SynchronousFuture(MobileDbCacheManager.init()),
         _cacheDirectoryPath = _getLocalDir(subDir ?? kDefaultImageCacheDir);
 
   final Future<MobileDbCacheManager> _cacheManager;
