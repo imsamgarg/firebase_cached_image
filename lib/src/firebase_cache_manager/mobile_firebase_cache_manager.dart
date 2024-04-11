@@ -1,38 +1,17 @@
-import 'dart:io';
-
 import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:firebase_cached_image/src/core/cached_object.dart';
 import 'package:firebase_cached_image/src/db_cache_manager/mobile_db_cache_manager.dart';
 import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_cache_manager.dart';
+import 'package:firebase_cached_image/src/fs_manager/fs_manager.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
-
-final _cachedAppDirPaths = <String, String>{};
-
-Future<String> _getLocalDir(String _subDir) async {
-  String _localDir;
-
-  if (_cachedAppDirPaths.containsKey(_subDir)) {
-    _localDir = _cachedAppDirPaths[_subDir]!;
-  } else {
-    final _cacheDir = await getTemporaryDirectory();
-    _localDir = join(_cacheDir.path, _subDir);
-    _cachedAppDirPaths.putIfAbsent(_subDir, () => _localDir);
-  }
-
-  await Directory(_localDir).create();
-
-  return _localDir;
-}
 
 class FirebaseCacheManager extends BaseFirebaseCacheManager {
   FirebaseCacheManager({super.subDir})
       : _cacheManager = SynchronousFuture(MobileDbCacheManager.init()),
-        _cacheDirectoryPath = _getLocalDir(subDir ?? kDefaultImageCacheDir);
+        _fs = FsManager(subDir: subDir ?? kDefaultImageCacheDir);
 
   final Future<MobileDbCacheManager> _cacheManager;
-  final Future<String> _cacheDirectoryPath;
+  final FsManager _fs;
 
   @override
   Future<CachedObject> getSingleObject(
@@ -40,6 +19,8 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     CacheOptions options = const CacheOptions(),
     int maxSize = 10485760,
   }) async {
+    final file = await _fs.getFile(firebaseUrl.uniqueId);
+
     final manager = await _cacheManager;
     Uint8List? bytes;
 
@@ -57,8 +38,6 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     final image = await manager.get(firebaseUrl.uniqueId);
 
     if (image != null) {
-      final file = File(await getFullLocalPath(image.id));
-
       if (file.existsSync()) {
         if (options.checkForMetadataChange) {
           await _refreshCachedFile(
@@ -74,17 +53,16 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
     bytes = await firebaseUrl.ref.getData(maxSize);
 
-    final localPath = await getFullLocalPath(firebaseUrl.uniqueId);
     final cachedObject = CachedObject(
       id: firebaseUrl.uniqueId,
       url: firebaseUrl.url.toString(),
       rawData: bytes,
-      fullLocalPath: localPath,
+      fullLocalPath: file.path,
       modifiedAt: DateTime.now().millisecondsSinceEpoch,
     );
 
     manager.put(cachedObject);
-    File(localPath).writeAsBytes(bytes!);
+    file.writeAsBytes(bytes!);
     return cachedObject;
   }
 
@@ -104,7 +82,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       return _downloadToCache(firebaseUrl, manager: manager);
     }
 
-    final file = File(await getFullLocalPath(firebaseUrl.uniqueId));
+    final file = await _fs.getFile(firebaseUrl.uniqueId);
     if (!file.existsSync()) {
       return _downloadToCache(firebaseUrl, manager: manager);
     }
@@ -118,7 +96,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       );
     }
 
-    return getFullLocalPath(firebaseUrl.uniqueId);
+    return file.path;
   }
 
   Future<void> _refreshCachedFile(
@@ -162,18 +140,18 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     FirebaseUrl firebaseUrl, {
     required MobileDbCacheManager manager,
   }) async {
-    final localFilePath = await getFullLocalPath(firebaseUrl.uniqueId);
-    await firebaseUrl.ref.writeToFile(File(localFilePath));
+    final file = await _fs.getFile(firebaseUrl.uniqueId);
+    await firebaseUrl.ref.writeToFile(file);
     await manager.put(
       CachedObject(
         id: firebaseUrl.uniqueId,
-        fullLocalPath: localFilePath,
+        fullLocalPath: file.path,
         url: firebaseUrl.url.toString(),
         modifiedAt: DateTime.now().millisecondsSinceEpoch,
       ),
     );
 
-    return localFilePath;
+    return file.path;
   }
 
   @override
@@ -181,11 +159,10 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     Duration? modifiedBefore,
   }) async {
     final manager = await _cacheManager;
-    final dirPath = await _cacheDirectoryPath;
 
     if (modifiedBefore == null) {
       await Future.wait([
-        Directory(dirPath).delete(recursive: true),
+        _fs.deleteAllFiles(),
 
         // Todo. implement a way to only delete rows with subDir equal to this [subDir]
         //
@@ -193,29 +170,23 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
         // manager.clear(),
       ]);
 
-      await Directory(dirPath).create();
       return;
     }
 
     final paths = await manager.clear(modifiedBefore: modifiedBefore);
-    final _futures = paths!.map((e) => File(e).delete()).toList();
+    final _futures = paths!.map((e) => _fs.deleteFile(e.id)).toList();
 
     await Future.wait(_futures);
   }
 
   @override
   Future<void> delete(FirebaseUrl firebaseUrl) async {
-    final localPath = await getFullLocalPath(firebaseUrl.uniqueId);
     final manager = await _cacheManager;
 
     await Future.wait([
-      File(localPath).delete(),
+      _fs.deleteFile(firebaseUrl.uniqueId),
       manager.delete(firebaseUrl.uniqueId),
     ]);
-  }
-
-  Future<String> getFullLocalPath(String fileName) async {
-    return join(await _cacheDirectoryPath, fileName);
   }
 
   @override
@@ -226,6 +197,6 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
     if (cachedObject == null) return false;
 
-    return File(await getFullLocalPath(cachedObject.id)).existsSync();
+    return _fs.fileExists(cachedObject.id);
   }
 }
