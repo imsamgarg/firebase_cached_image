@@ -12,6 +12,15 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
         _fs = FsManager(subDir: subDir ?? kDefaultImageCacheDir),
         _cloudStorageManager = NativeCloudStorageManager();
 
+  @visibleForTesting
+  FirebaseCacheManager.test({
+    required MobileDbCacheManager cacheManager,
+    required FsManager fs,
+    required NativeCloudStorageManager cloudStorageManager,
+  })  : _cacheManager = cacheManager,
+        _fs = fs,
+        _cloudStorageManager = cloudStorageManager;
+
   final MobileDbCacheManager _cacheManager;
   final NativeCloudStorageManager _cloudStorageManager;
   final FsManager _fs;
@@ -74,17 +83,17 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     CacheOptions options = const CacheOptions(),
   }) async {
     if (options.source == Source.server) {
-      return _downloadToCache(firebaseUrl);
+      return downloadToCache(firebaseUrl);
     }
 
     final cachedObject = await _cacheManager.get(firebaseUrl.uniqueId);
     if (cachedObject == null) {
-      return _downloadToCache(firebaseUrl);
+      return downloadToCache(firebaseUrl);
     }
 
     final file = await _fs.getFile(firebaseUrl.uniqueId);
     if (!file.existsSync()) {
-      return _downloadToCache(firebaseUrl);
+      return downloadToCache(firebaseUrl);
     }
 
     /// Refresh cache file in background
@@ -106,7 +115,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
         cachedObject ?? await _cacheManager.get(firebaseUrl.uniqueId);
 
     if (_cachedObject == null) {
-      await _downloadToCache(firebaseUrl);
+      await downloadToCache(firebaseUrl);
       return;
     }
 
@@ -116,7 +125,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     );
 
     if (isUpdated) {
-      await _downloadToCache(firebaseUrl);
+      await downloadToCache(firebaseUrl);
     }
   }
 
@@ -130,10 +139,11 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     final cachedObject = await _cacheManager.get(firebaseUrl.uniqueId);
     if (cachedObject != null) return;
 
-    await _downloadToCache(firebaseUrl);
+    await downloadToCache(firebaseUrl);
   }
 
-  Future<String> _downloadToCache(FirebaseUrl firebaseUrl) async {
+  @visibleForTesting
+  Future<String> downloadToCache(FirebaseUrl firebaseUrl) async {
     final file = await _fs.getFile(firebaseUrl.uniqueId);
     await _cloudStorageManager.writeToFile(firebaseUrl, file);
     await _cacheManager.put(
