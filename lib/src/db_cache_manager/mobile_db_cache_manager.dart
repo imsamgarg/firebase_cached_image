@@ -9,7 +9,7 @@ import 'package:sqflite/sqflite.dart';
 class MobileDbCacheManager {
   final Future<Database> _db;
 
-  MobileDbCacheManager.init() : _db = _getDb();
+  MobileDbCacheManager() : _db = _getDb();
 
   @visibleForTesting
   static const tableName = "flutter_cached_images";

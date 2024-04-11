@@ -7,10 +7,10 @@ import 'package:flutter/foundation.dart';
 
 class FirebaseCacheManager extends BaseFirebaseCacheManager {
   FirebaseCacheManager({super.subDir})
-      : _cacheManager = SynchronousFuture(MobileDbCacheManager.init()),
+      : _cacheManager = MobileDbCacheManager(),
         _fs = FsManager(subDir: subDir ?? kDefaultImageCacheDir);
 
-  final Future<MobileDbCacheManager> _cacheManager;
+  final MobileDbCacheManager _cacheManager;
   final FsManager _fs;
 
   @override
@@ -21,7 +21,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   }) async {
     final file = await _fs.getFile(firebaseUrl.uniqueId);
 
-    final manager = await _cacheManager;
+    final manager = _cacheManager;
     Uint8List? bytes;
 
     if (options.source == Source.server) {
@@ -42,7 +42,6 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
         if (options.checkForMetadataChange) {
           await _refreshCachedFile(
             firebaseUrl,
-            manager: manager,
             cachedObject: image,
           );
         }
@@ -71,27 +70,24 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     FirebaseUrl firebaseUrl, {
     CacheOptions options = const CacheOptions(),
   }) async {
-    final manager = await _cacheManager;
-
     if (options.source == Source.server) {
-      return _downloadToCache(firebaseUrl, manager: manager);
+      return _downloadToCache(firebaseUrl);
     }
 
-    final cachedObject = await manager.get(firebaseUrl.uniqueId);
+    final cachedObject = await _cacheManager.get(firebaseUrl.uniqueId);
     if (cachedObject == null) {
-      return _downloadToCache(firebaseUrl, manager: manager);
+      return _downloadToCache(firebaseUrl);
     }
 
     final file = await _fs.getFile(firebaseUrl.uniqueId);
     if (!file.existsSync()) {
-      return _downloadToCache(firebaseUrl, manager: manager);
+      return _downloadToCache(firebaseUrl);
     }
 
     /// Refresh cache file in background
     if (options.checkForMetadataChange) {
       await _refreshCachedFile(
         firebaseUrl,
-        manager: manager,
         cachedObject: cachedObject,
       );
     }
@@ -101,14 +97,13 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
   Future<void> _refreshCachedFile(
     FirebaseUrl firebaseUrl, {
-    required MobileDbCacheManager manager,
     CachedObject? cachedObject,
   }) async {
     final _cachedObject =
-        cachedObject ?? await manager.get(firebaseUrl.uniqueId);
+        cachedObject ?? await _cacheManager.get(firebaseUrl.uniqueId);
 
     if (_cachedObject == null) {
-      await _downloadToCache(firebaseUrl, manager: manager);
+      await _downloadToCache(firebaseUrl);
       return;
     }
 
@@ -116,33 +111,27 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
     if ((metadata.updated?.millisecondsSinceEpoch ?? 0) >
         _cachedObject.modifiedAt) {
-      await _downloadToCache(firebaseUrl, manager: manager);
+      await _downloadToCache(firebaseUrl);
     }
   }
 
   @override
-  Future<void> refreshCachedFile(FirebaseUrl firebaseUrl) async {
-    final manager = await Future.value(_cacheManager);
-    return _refreshCachedFile(firebaseUrl, manager: manager);
+  Future<void> refreshCachedFile(FirebaseUrl firebaseUrl) {
+    return _refreshCachedFile(firebaseUrl);
   }
 
   @override
   Future<void> preCacheFile(FirebaseUrl firebaseUrl) async {
-    final manager = await _cacheManager;
-
-    final cachedObject = await manager.get(firebaseUrl.uniqueId);
+    final cachedObject = await _cacheManager.get(firebaseUrl.uniqueId);
     if (cachedObject != null) return;
 
-    await _downloadToCache(firebaseUrl, manager: manager);
+    await _downloadToCache(firebaseUrl);
   }
 
-  Future<String> _downloadToCache(
-    FirebaseUrl firebaseUrl, {
-    required MobileDbCacheManager manager,
-  }) async {
+  Future<String> _downloadToCache(FirebaseUrl firebaseUrl) async {
     final file = await _fs.getFile(firebaseUrl.uniqueId);
     await firebaseUrl.ref.writeToFile(file);
-    await manager.put(
+    await _cacheManager.put(
       CachedObject(
         id: firebaseUrl.uniqueId,
         fullLocalPath: file.path,
@@ -158,8 +147,6 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   Future<void> clearCache({
     Duration? modifiedBefore,
   }) async {
-    final manager = await _cacheManager;
-
     if (modifiedBefore == null) {
       await Future.wait([
         _fs.deleteAllFiles(),
@@ -173,27 +160,23 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       return;
     }
 
-    final paths = await manager.clear(modifiedBefore: modifiedBefore);
+    final paths = await _cacheManager.clear(modifiedBefore: modifiedBefore);
     final _futures = paths!.map((e) => _fs.deleteFile(e.id)).toList();
 
     await Future.wait(_futures);
   }
 
   @override
-  Future<void> delete(FirebaseUrl firebaseUrl) async {
-    final manager = await _cacheManager;
-
-    await Future.wait([
+  Future<void> delete(FirebaseUrl firebaseUrl) {
+    return Future.wait([
       _fs.deleteFile(firebaseUrl.uniqueId),
-      manager.delete(firebaseUrl.uniqueId),
+      _cacheManager.delete(firebaseUrl.uniqueId),
     ]);
   }
 
   @override
   Future<bool> isCached(FirebaseUrl firebaseUrl) async {
-    final manager = await _cacheManager;
-
-    final cachedObject = await manager.get(firebaseUrl.uniqueId);
+    final cachedObject = await _cacheManager.get(firebaseUrl.uniqueId);
 
     if (cachedObject == null) return false;
 
