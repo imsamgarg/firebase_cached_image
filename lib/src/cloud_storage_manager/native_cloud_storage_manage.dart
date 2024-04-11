@@ -1,15 +1,29 @@
+import 'dart:typed_data';
+
 import 'package:file/file.dart';
 import 'package:firebase_cached_image/src/cloud_storage_manager/cloud_storage_manager.dart';
 import 'package:firebase_cached_image/src/core/firebase_url.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/widgets.dart';
 
 class NativeCloudStorageManager extends CloudStorageManager {
-  Future<TaskSnapshot> writeToFile(
+  //* Dynamic is used to avoid returning DownloadTask in Test class
+  Future<dynamic> writeToFile(
     FirebaseUrl firebaseUrl,
     File file,
-  ) async {
-    final task = await firebaseUrl.ref.writeToFile(file);
+  ) {
+    return firebaseUrl.ref.writeToFile(file);
+  }
+}
 
-    return task;
+@visibleForTesting
+class TestNativeCloudStorageManager extends NativeCloudStorageManager {
+  static final bytes = Uint8List.fromList([1, 2, 3]);
+
+  @override
+  Future<dynamic> writeToFile(
+    FirebaseUrl firebaseUrl,
+    File file,
+  ) {
+    return file.writeAsBytes(bytes);
   }
 }
