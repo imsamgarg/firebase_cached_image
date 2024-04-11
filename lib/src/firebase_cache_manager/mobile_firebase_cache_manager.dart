@@ -1,4 +1,5 @@
 import 'package:firebase_cached_image/firebase_cached_image.dart';
+import 'package:firebase_cached_image/src/cloud_storage_manager/native_cloud_storage_manage.dart';
 import 'package:firebase_cached_image/src/core/cached_object.dart';
 import 'package:firebase_cached_image/src/db_cache_manager/mobile_db_cache_manager.dart';
 import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_cache_manager.dart';
@@ -8,9 +9,11 @@ import 'package:flutter/foundation.dart';
 class FirebaseCacheManager extends BaseFirebaseCacheManager {
   FirebaseCacheManager({super.subDir})
       : _cacheManager = MobileDbCacheManager(),
-        _fs = FsManager(subDir: subDir ?? kDefaultImageCacheDir);
+        _fs = FsManager(subDir: subDir ?? kDefaultImageCacheDir),
+        _cloudStorageManager = NativeCloudStorageManager();
 
   final MobileDbCacheManager _cacheManager;
+  final NativeCloudStorageManager _cloudStorageManager;
   final FsManager _fs;
 
   @override
@@ -21,11 +24,11 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   }) async {
     final file = await _fs.getFile(firebaseUrl.uniqueId);
 
-    final manager = _cacheManager;
     Uint8List? bytes;
 
     if (options.source == Source.server) {
-      bytes = await firebaseUrl.ref.getData(maxSize);
+      bytes =
+          await _cloudStorageManager.downloadLatestFile(firebaseUrl, maxSize);
 
       return CachedObject(
         id: firebaseUrl.uniqueId,
@@ -35,7 +38,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       );
     }
 
-    final image = await manager.get(firebaseUrl.uniqueId);
+    final image = await _cacheManager.get(firebaseUrl.uniqueId);
 
     if (image != null) {
       if (file.existsSync()) {
@@ -50,7 +53,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       }
     }
 
-    bytes = await firebaseUrl.ref.getData(maxSize);
+    bytes = await _cloudStorageManager.downloadLatestFile(firebaseUrl, maxSize);
 
     final cachedObject = CachedObject(
       id: firebaseUrl.uniqueId,
@@ -60,7 +63,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       modifiedAt: DateTime.now().millisecondsSinceEpoch,
     );
 
-    manager.put(cachedObject);
+    _cacheManager.put(cachedObject);
     file.writeAsBytes(bytes!);
     return cachedObject;
   }
@@ -107,10 +110,12 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       return;
     }
 
-    final metadata = await firebaseUrl.ref.getMetadata();
+    final isUpdated = await _cloudStorageManager.isUpdated(
+      firebaseUrl,
+      _cachedObject.modifiedAt,
+    );
 
-    if ((metadata.updated?.millisecondsSinceEpoch ?? 0) >
-        _cachedObject.modifiedAt) {
+    if (isUpdated) {
       await _downloadToCache(firebaseUrl);
     }
   }
@@ -130,7 +135,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
   Future<String> _downloadToCache(FirebaseUrl firebaseUrl) async {
     final file = await _fs.getFile(firebaseUrl.uniqueId);
-    await firebaseUrl.ref.writeToFile(file);
+    await _cloudStorageManager.writeToFile(firebaseUrl, file);
     await _cacheManager.put(
       CachedObject(
         id: firebaseUrl.uniqueId,
