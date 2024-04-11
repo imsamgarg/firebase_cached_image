@@ -30,7 +30,7 @@ class MobileDbCacheManager {
   static Future<String> _getDatabasePath() async =>
       join((await getTemporaryDirectory()).path, "$tableName.db");
 
-  Future<List<String>?> clear({Duration? modifiedBefore}) async {
+  Future<List<CachedObject>?> clear({Duration? modifiedBefore}) async {
     final db = await _db;
     if (modifiedBefore != null) {
       final millis =
@@ -40,12 +40,11 @@ class MobileDbCacheManager {
         tableName,
         where: "modifiedAt < ?",
         whereArgs: [millis],
-        columns: ["fullLocalPath"],
       );
 
       await db.delete(tableName, where: "modifiedAt < ?", whereArgs: [millis]);
 
-      return data.map((e) => e['fullLocalPath']! as String).toList();
+      return data.map((e) => CachedObject.fromMap(e)).toList();
     } else {
       await db.delete(tableName);
     }
