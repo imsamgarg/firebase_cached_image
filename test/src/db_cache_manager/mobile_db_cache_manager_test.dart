@@ -42,7 +42,7 @@ void main() {
     databaseFactory = databaseFactoryFfi;
     db = await openDatabase(inMemoryDatabasePath);
     await MobileDbCacheManager.createDb(db, 1);
-    manager = MobileDbCacheManager.test(db);
+    manager = MobileDbCacheManager.test(Future.value(db));
   });
 
   test('cache hit', () async {
@@ -179,7 +179,7 @@ void main() {
       const modifiedBefore = Duration(minutes: 10);
       final modifiedTime = dateTime.subtract(modifiedBefore);
 
-      final dbDeletedPaths =
+      final dbDeletedObjects =
           await manager.clear(modifiedBefore: modifiedBefore);
 
       final deletedObjects = objects
@@ -188,11 +188,11 @@ void main() {
           )
           .toList();
 
-      expect(deletedObjects.length, dbDeletedPaths?.length);
+      expect(deletedObjects.length, dbDeletedObjects?.length);
 
       expect(
-        deletedObjects.map((e) => e.fullLocalPath).toSet(),
-        dbDeletedPaths?.toSet(),
+        deletedObjects.toSet(),
+        dbDeletedObjects?.toSet(),
       );
     });
 
