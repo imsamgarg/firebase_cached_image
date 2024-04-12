@@ -58,7 +58,7 @@ void main() {
   //* Test the downloadToCache method
   test("downloadToCache", () async {
     final url = FirebaseUrl.fromReference(ref);
-    final bytes = TestNativeCloudStorageManager.bytes;
+    final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
     when(cloudStorageManager.writeToFile(url, any)).thenAnswer(
       (i) => (i.positionalArguments[1] as File).writeAsBytes(bytes),
@@ -81,7 +81,7 @@ void main() {
   group("getSingleObject ", () {
     test("when the source is Source.server", () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.downloadLatestFile(url))
           .thenAnswer((_) async => bytes);
@@ -105,7 +105,7 @@ void main() {
     //* When the source is Source.cacheServer
     test("when the source is Source.cacheServer", () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.downloadLatestFile(url))
           .thenAnswer((_) async => bytes);
@@ -133,7 +133,7 @@ void main() {
         "when the source is Source.cacheServer on first it should download the file on next call it should get the file from the cache",
         () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.downloadLatestFile(url))
           .thenAnswer((_) async => bytes);
@@ -177,7 +177,7 @@ void main() {
         "when the source is Source.cacheServer and checkForMetadataChange is true and the file is not updated",
         () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.downloadLatestFile(url)).thenAnswer(
         (_) async => bytes,
@@ -224,7 +224,7 @@ void main() {
         "when the source is Source.cacheServer and checkForMetadataChange is true and the file is updated",
         () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.downloadLatestFile(url)).thenAnswer(
         (_) async => bytes,
@@ -265,6 +265,8 @@ void main() {
 
       //* On next call it should download the file
       verify(cloudStorageManager.downloadLatestFile(url)).called(1);
+      verify(cloudStorageManager.isUpdated(url, cachedObject.modifiedAt))
+          .called(1);
 
       expect(cachedObject2.id, url.uniqueId);
       expect(cachedObject2.rawData, bytes2);
@@ -285,7 +287,7 @@ void main() {
     //* When the source is Source.server
     test("when the source is Source.server", () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.writeToFile(url, any)).thenAnswer(
         (inv) async => (inv.positionalArguments[1] as File).writeAsBytes(bytes),
@@ -308,7 +310,7 @@ void main() {
         "when the source is Source.cacheServer on first it should download the file on next call it should get the file from the cache",
         () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.writeToFile(url, any)).thenAnswer(
         (inv) async => (inv.positionalArguments[1] as File).writeAsBytes(bytes),
@@ -342,7 +344,7 @@ void main() {
         "when the source is Source.cacheServer and checkForMetadataChange is true and the file is not updated",
         () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.writeToFile(url, any)).thenAnswer(
         (inv) async => (inv.positionalArguments[1] as File).writeAsBytes(bytes),
@@ -385,7 +387,7 @@ void main() {
         "when the source is Source.cacheServer and checkForMetadataChange is true and the file is updated",
         () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.writeToFile(url, any)).thenAnswer(
         (inv) async => (inv.positionalArguments[1] as File).writeAsBytes(bytes),
@@ -441,7 +443,7 @@ void main() {
         "when the source is Source.cacheServer and db has the file but the file is not present in the cache",
         () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.writeToFile(url, any)).thenAnswer(
         (inv) async => (inv.positionalArguments[1] as File).writeAsBytes(bytes),
@@ -495,7 +497,7 @@ void main() {
     test("when file is not present in the cache it should download latest file",
         () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.writeToFile(url, any)).thenAnswer(
         (inv) async => (inv.positionalArguments[1] as File).writeAsBytes(bytes),
@@ -509,7 +511,7 @@ void main() {
     test("when file is present in the cache it should not download the file",
         () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.writeToFile(url, any)).thenAnswer(
         (inv) async => (inv.positionalArguments[1] as File).writeAsBytes(bytes),
@@ -529,7 +531,7 @@ void main() {
         "when the file is not present in the cache it should download the file",
         () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.writeToFile(url, any)).thenAnswer(
         (inv) async => (inv.positionalArguments[1] as File).writeAsBytes(bytes),
@@ -545,7 +547,7 @@ void main() {
         "when the file is present in the cache but not updated on the server it should not download the file",
         () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.writeToFile(url, any)).thenAnswer(
         (inv) async => (inv.positionalArguments[1] as File).writeAsBytes(bytes),
@@ -567,7 +569,7 @@ void main() {
         "when the file is present in the cache and updated on the server it should download the file",
         () async {
       final url = FirebaseUrl.fromReference(ref);
-      final bytes = TestNativeCloudStorageManager.bytes;
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
       when(cloudStorageManager.writeToFile(url, any)).thenAnswer(
         (inv) async => (inv.positionalArguments[1] as File).writeAsBytes(bytes),
@@ -600,7 +602,7 @@ void main() {
   //* Test the isCached method
   test("isCached", () async {
     final url = FirebaseUrl.fromReference(ref);
-    final bytes = TestNativeCloudStorageManager.bytes;
+    final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
     when(cloudStorageManager.downloadLatestFile(url)).thenAnswer(
       (_) async => bytes,
@@ -620,7 +622,7 @@ void main() {
   //* Test the delete method
   test("delete", () async {
     final url = FirebaseUrl.fromReference(ref);
-    final bytes = TestNativeCloudStorageManager.bytes;
+    final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
     when(cloudStorageManager.downloadLatestFile(url)).thenAnswer(
       (_) async => bytes,
