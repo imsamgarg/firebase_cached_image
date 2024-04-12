@@ -51,14 +51,18 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
     if (image != null) {
       if (file.existsSync()) {
-        if (options.checkForMetadataChange) {
-          await _refreshCachedFile(
-            firebaseUrl,
-            cachedObject: image,
-          );
+        if (!options.checkForMetadataChange) {
+          return image.copyWith(rawData: await file.readAsBytes());
         }
 
-        return image.copyWith(rawData: await file.readAsBytes());
+        final isUpdated = await _cloudStorageManager.isUpdated(
+          firebaseUrl,
+          image.modifiedAt,
+        );
+
+        if (!isUpdated) {
+          return image.copyWith(rawData: await file.readAsBytes());
+        }
       }
     }
 
@@ -72,8 +76,11 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       modifiedAt: DateTime.now().millisecondsSinceEpoch,
     );
 
-    _cacheManager.put(cachedObject);
-    file.writeAsBytes(bytes!);
+    await Future.wait([
+      file.writeAsBytes(bytes!),
+      _cacheManager.put(cachedObject),
+    ]);
+
     return cachedObject;
   }
 
@@ -145,15 +152,18 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   @visibleForTesting
   Future<String> downloadToCache(FirebaseUrl firebaseUrl) async {
     final file = await _fs.getFile(firebaseUrl.uniqueId);
-    await _cloudStorageManager.writeToFile(firebaseUrl, file);
-    await _cacheManager.put(
-      CachedObject(
-        id: firebaseUrl.uniqueId,
-        fullLocalPath: file.path,
-        url: firebaseUrl.url.toString(),
-        modifiedAt: DateTime.now().millisecondsSinceEpoch,
+
+    await Future.wait([
+      _cloudStorageManager.writeToFile(firebaseUrl, file),
+      _cacheManager.put(
+        CachedObject(
+          id: firebaseUrl.uniqueId,
+          fullLocalPath: file.path,
+          url: firebaseUrl.url.toString(),
+          modifiedAt: DateTime.now().millisecondsSinceEpoch,
+        ),
       ),
-    );
+    ]);
 
     return file.path;
   }
