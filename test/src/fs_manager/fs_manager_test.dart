@@ -101,5 +101,12 @@ void main() {
       final dirPath = await fsManager2.dirPath;
       expect(path.basename(dirPath), contains('test2'));
     });
+
+    test("file", () {
+      const path = "/test.txt";
+      final file = fsManager.file(path);
+
+      expect(file.path, path);
+    });
   });
 }

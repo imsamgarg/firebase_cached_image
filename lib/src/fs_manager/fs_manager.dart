@@ -50,6 +50,11 @@ class FsManager {
     return _fs.directory(dir).childFile(fileName);
   }
 
+  /// Returns a [File] object for the given path. Could be used in case we need to create a file object for any arbitrary path.
+  File file(String path) {
+    return _fs.file(path);
+  }
+
   Future<File> createFile(String fileName) async {
     return getFile(fileName).then((file) => file.create());
   }
