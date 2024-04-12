@@ -641,6 +641,68 @@ void main() {
     expect(isCached2, isFalse);
   });
 
+  group("copyToCache", () {
+    //* Test when the file is not present in the cache
+    test("when the file is not present in the cache", () async {
+      final url = FirebaseUrl.fromReference(ref);
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
+
+      final tempFile = fs.file("temp.jpg");
+      tempFile.writeAsBytesSync(bytes);
+
+      final filePath = await cacheManager.copyToCache(url, tempFile.path);
+
+      final file = fs.file(filePath);
+
+      expect(file.existsSync(), isTrue);
+      expect(file.readAsBytesSync(), equals(bytes));
+    });
+
+    //* Test when the file is present in the cache
+
+    test("when the file is present in the cache", () async {
+      final url = FirebaseUrl.fromReference(ref);
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
+
+      final tempFile = fs.file("temp.jpg");
+      tempFile.writeAsBytesSync(bytes);
+
+      final filePath = await cacheManager.copyToCache(url, tempFile.path);
+
+      final file = fs.file(filePath);
+      final fileStats = file.statSync();
+
+      final filePath2 = await cacheManager.copyToCache(url, tempFile.path);
+
+      final file2 = fs.file(filePath2);
+      final fileStats2 = file2.statSync();
+
+      expect(filePath2, filePath);
+      // File should not be modified
+      expect(fileStats2.modified, fileStats.modified);
+    });
+
+    //* Test after copying the file to the cache [getSingleFile] should return the file from the cache
+    test(
+        "after copying the file to the cache getSingleFile should return the file from the cache",
+        () async {
+      final url = FirebaseUrl.fromReference(ref);
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
+
+      final tempFile = fs.file("temp.jpg");
+      tempFile.writeAsBytesSync(bytes);
+
+      final filePath = await cacheManager.copyToCache(url, tempFile.path);
+
+      final filePath2 = await cacheManager.getSingleFile(
+        url,
+      );
+
+      verifyNever(cloudStorageManager.writeToFile(url, any));
+      expect(filePath2, filePath);
+    });
+  });
+
   tearDown(() async {
     await db.delete(MobileDbCacheManager.tableName);
     await fsManager.deleteAllFiles();

@@ -50,4 +50,9 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     //Always return false on web.
     return Future.value(false);
   }
+
+  @override
+  Future<String> copyToCache(FirebaseUrl firebaseUrl, String filePath) {
+    throw UnsupportedError("Not Supported On Web");
+  }
 }

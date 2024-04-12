@@ -207,4 +207,25 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
     return _fs.fileExists(cachedObject.id);
   }
+
+  @override
+  Future<String> copyToCache(FirebaseUrl firebaseUrl, String filePath) async {
+    final file = await _fs.getFile(firebaseUrl.uniqueId);
+
+    if (file.existsSync()) return file.path;
+
+    await Future.wait([
+      _fs.file(filePath).copy(file.path),
+      _cacheManager.put(
+        CachedObject(
+          id: firebaseUrl.uniqueId,
+          fullLocalPath: file.path,
+          url: firebaseUrl.url.toString(),
+          modifiedAt: DateTime.now().millisecondsSinceEpoch,
+        ),
+      ),
+    ]);
+
+    return file.path;
+  }
 }

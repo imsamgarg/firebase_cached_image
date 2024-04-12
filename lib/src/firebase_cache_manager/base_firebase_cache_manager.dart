@@ -60,6 +60,16 @@ abstract class BaseFirebaseCacheManager {
   /// it has been updated and saves it to cache.
   Future<void> refreshCachedFile(FirebaseUrl firebaseUrl);
 
+  /// Copy file to cache
+  ///
+  /// To manually copy file to cache, use this method. To avoid downloading the file again. It will copy the file from [filePath] to cache and return the cached file path.
+  ///
+  /// Note: If the file already exists in cache then it won't do anything, if you
+  /// want to update the cache file if its updated on the server then use the [refreshCachedFile] method..
+  ///
+  /// Throws [UnsupportedError] in web;
+  Future<String> copyToCache(FirebaseUrl firebaseUrl, String filePath);
+
   /// PreCache file from cloud storage
   ///
   /// Note: If the file already exists in cache then it won't do anything, if you
