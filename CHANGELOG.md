@@ -1,6 +1,14 @@
+## 0.6.0
+
+- `CacheOptions.metadataRefreshInBackground` field removed (Breaking).
+- `CacheOptions.checkForMetadataChange` field deprecated and used `CacheOptions.checkIfFileUpdatedOnServer` field instead.
+- Fixed `FirebaseCacheManager.clearCache` method not clearing db entries.
+- `FirebaseCacheManager.copyToCache` method added
+- Tests added
+
 ## 0.5.3
 
-- Fixed bug in `FirebaseCacheManager.clearCache` method not checking for whether the fix exists or not.
+- Fixed bug in `FirebaseCacheManager.getSingleFile` method not checking for whether the file exists or not.
 
 ## 0.5.2
 
