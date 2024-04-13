@@ -7,9 +7,12 @@ import 'package:firebase_cached_image/src/fs_manager/fs_manager.dart';
 import 'package:flutter/foundation.dart';
 
 class FirebaseCacheManager extends BaseFirebaseCacheManager {
+  final String _subDir;
+
   FirebaseCacheManager({super.subDir})
       : _cacheManager = MobileDbCacheManager(),
         _fs = FsManager(subDir: subDir ?? kDefaultImageCacheDir),
+        _subDir = subDir ?? kDefaultImageCacheDir,
         _cloudStorageManager = NativeCloudStorageManager();
 
   @visibleForTesting
@@ -17,8 +20,10 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     required MobileDbCacheManager cacheManager,
     required FsManager fs,
     required NativeCloudStorageManager cloudStorageManager,
+    required String subDir,
   })  : _cacheManager = cacheManager,
         _fs = fs,
+        _subDir = subDir,
         _cloudStorageManager = cloudStorageManager;
 
   final MobileDbCacheManager _cacheManager;
@@ -175,18 +180,20 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     if (modifiedBefore == null) {
       await Future.wait([
         _fs.deleteAllFiles(),
-
-        // Todo. implement a way to only delete rows with subDir equal to this [subDir]
-        //
-        // It will clear the entire database table that we don't want
-        // manager.clear(),
+        _cacheManager.clear(subDir: _subDir),
       ]);
 
       return;
     }
 
-    final paths = await _cacheManager.clear(modifiedBefore: modifiedBefore);
-    final _futures = paths!.map((e) => _fs.deleteFile(e.id)).toList();
+    final paths = await _cacheManager.clear(
+      modifiedBefore: modifiedBefore,
+      subDir: _subDir,
+    );
+
+    final _futures = paths!
+        .map((e) => _fs.deleteFile(e.id).catchError(_digestError))
+        .toList();
 
     await Future.wait(_futures);
   }
@@ -227,5 +234,9 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     ]);
 
     return file.path;
+  }
+
+  void _digestError(Object error, StackTrace stackTrace) {
+    //Do nothing for now
   }
 }

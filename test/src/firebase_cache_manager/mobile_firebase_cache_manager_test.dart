@@ -46,6 +46,7 @@ void main() {
       cacheManager: manager,
       fs: fsManager,
       cloudStorageManager: cloudStorageManager,
+      subDir: subDir,
     );
   });
 

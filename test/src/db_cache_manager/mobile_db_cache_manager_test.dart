@@ -166,12 +166,14 @@ void main() {
         },
       );
 
+      const subDir = "test";
+
       final objects = await Future.wait(
         files.map(
           (e) => putTempCachedObject(
             "file_$e.jpg",
             modifiedAt: e.millisecondsSinceEpoch,
-            localPath: "path_$e.jpg",
+            localPath: "storage/$subDir/path_$e.jpg",
           ),
         ),
       );
@@ -180,7 +182,7 @@ void main() {
       final modifiedTime = dateTime.subtract(modifiedBefore);
 
       final dbDeletedObjects =
-          await manager.clear(modifiedBefore: modifiedBefore);
+          await manager.clear(modifiedBefore: modifiedBefore, subDir: subDir);
 
       final deletedObjects = objects
           .where(
@@ -197,11 +199,18 @@ void main() {
     });
 
     test("all objects without modified filter", () async {
+      const subDir = "test";
       final objects = await Future.wait(
-        List.generate(10, (index) => putTempCachedObject("file$index.jpg")),
+        List.generate(
+          10,
+          (index) => putTempCachedObject(
+            "file$index.jpg",
+            localPath: "storage/$subDir/path$index.jpg",
+          ),
+        ),
       );
 
-      await manager.clear();
+      await manager.clear(subDir: subDir);
 
       for (final obj in objects) {
         final dbObj = await manager.get(obj.id);
@@ -209,6 +218,155 @@ void main() {
         expect(null, dbObj);
       }
     });
+
+    test("When no objects are there with the given subDir value", () async {
+      const subDir = "test";
+      final objects = await Future.wait(
+        List.generate(
+          10,
+          (index) => putTempCachedObject(
+            "file$index.jpg",
+            localPath: "storage/$subDir/path$index.jpg",
+          ),
+        ),
+      );
+
+      final deletedObjects = await manager.clear(subDir: "test2");
+      expect(deletedObjects?.length, 0);
+
+      for (final obj in objects) {
+        final dbObj = await manager.get(obj.id);
+
+        expect(obj, dbObj);
+      }
+    });
+
+    //* Test when there are objects with different subDir values
+    test("objects with different subDir values and modifiedBefore is null",
+        () async {
+      final files = List.generate(20, (i) => i);
+
+      const subDir = "test";
+      const subDir2 = "test2";
+
+      final objects = await Future.wait(
+        files.map(
+          (e) => putTempCachedObject(
+            "file_$e.jpg",
+            localPath: "storage/$subDir/path_$e.jpg",
+          ),
+        ),
+      );
+
+      final objects2 = await Future.wait(
+        files.map(
+          (e) => putTempCachedObject(
+            "file2_$e.jpg",
+            localPath: "storage/$subDir2/path_$e.jpg",
+          ),
+        ),
+      );
+
+      final dbDeletedObjects = await manager.clear(subDir: subDir);
+
+      final deletedObjects = objects.toList();
+
+      expect(deletedObjects.length, dbDeletedObjects?.length);
+
+      expect(
+        deletedObjects.toSet(),
+        dbDeletedObjects?.toSet(),
+      );
+
+      final dbDeletedObjects2 = await manager.clear(subDir: subDir2);
+
+      final deletedObjects2 = objects2.toList();
+
+      expect(deletedObjects2.length, dbDeletedObjects2?.length);
+
+      expect(
+        deletedObjects2.toSet(),
+        dbDeletedObjects2?.toSet(),
+      );
+    });
+
+    //* Test when there are objects with different subDir values and modifiedBefore is not null
+
+    test("objects with different subDir values and modifiedBefore is not null",
+        () async {
+      final dateTime = DateTime.now();
+
+      manager.getNowTimeFunc = () {
+        return dateTime;
+      };
+
+      final files = List.generate(
+        20,
+        (index) {
+          return dateTime.subtract(Duration(minutes: index + 1));
+        },
+      );
+
+      const subDir = "test";
+      const subDir2 = "test2";
+
+      final objects = await Future.wait(
+        files.map(
+          (e) => putTempCachedObject(
+            "file_$e.jpg",
+            modifiedAt: e.millisecondsSinceEpoch,
+            localPath: "storage/$subDir/path_$e.jpg",
+          ),
+        ),
+      );
+
+      final objects2 = await Future.wait(
+        files.map(
+          (e) => putTempCachedObject(
+            "file2_$e.jpg",
+            modifiedAt: e.millisecondsSinceEpoch,
+            localPath: "storage/$subDir2/path_$e.jpg",
+          ),
+        ),
+      );
+
+      const modifiedBefore = Duration(minutes: 10);
+      final modifiedTime = dateTime.subtract(modifiedBefore);
+
+      final dbDeletedObjects =
+          await manager.clear(modifiedBefore: modifiedBefore, subDir: subDir);
+
+      final deletedObjects = objects
+          .where(
+            (value) => value.modifiedAt < modifiedTime.millisecondsSinceEpoch,
+          )
+          .toList();
+
+      expect(deletedObjects.length, dbDeletedObjects?.length);
+
+      expect(
+        deletedObjects.toSet(),
+        dbDeletedObjects?.toSet(),
+      );
+
+      final dbDeletedObjects2 =
+          await manager.clear(modifiedBefore: modifiedBefore, subDir: subDir2);
+
+      final deletedObjects2 = objects2
+          .where(
+            (value) => value.modifiedAt < modifiedTime.millisecondsSinceEpoch,
+          )
+          .toList();
+
+      expect(deletedObjects2.length, dbDeletedObjects2?.length);
+
+      expect(
+        deletedObjects2.toSet(),
+        dbDeletedObjects2?.toSet(),
+      );
+    });
+
+    //* Test when there are no objects with the given subDir value
   });
 
   tearDownAll(() => db.close());
