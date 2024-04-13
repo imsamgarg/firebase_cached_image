@@ -7,16 +7,6 @@ class CacheOptions {
   /// default: Source.cacheServer
   final Source source;
 
-  /// if this is set to true then file fetched from cached will get returned
-  /// immediately and metadata comparison will happen in background.
-  ///
-  /// Otherwise metadata comparison is done first then the updated file will
-  /// get returned.
-  ///
-  /// Note: Only applicable if checkForMetadataChange is set to true
-  @Deprecated("Field not used anymore")
-  final bool metadataRefreshInBackground;
-
   /// if this is set to true then a server call will be made to check whether
   /// the file has been updated or not. If its updated then we will cache the
   /// updated file in background.
@@ -28,14 +18,11 @@ class CacheOptions {
   const CacheOptions({
     this.checkForMetadataChange = false,
     this.source = Source.cacheServer,
-    @Deprecated("Field not used anymore")
-    this.metadataRefreshInBackground = true,
   });
 
   @override
-  String toString() {
-    return 'CacheOptions(source: $source, metadataRefreshInBackground: $metadataRefreshInBackground, checkForMetadataChange: $checkForMetadataChange)';
-  }
+  String toString() =>
+      'CacheOptions(source: $source, checkForMetadataChange: $checkForMetadataChange)';
 
   @override
   bool operator ==(Object other) {
@@ -43,14 +30,9 @@ class CacheOptions {
 
     return other is CacheOptions &&
         other.source == source &&
-        other.metadataRefreshInBackground == metadataRefreshInBackground &&
         other.checkForMetadataChange == checkForMetadataChange;
   }
 
   @override
-  int get hashCode {
-    return source.hashCode ^
-        metadataRefreshInBackground.hashCode ^
-        checkForMetadataChange.hashCode;
-  }
+  int get hashCode => source.hashCode ^ checkForMetadataChange.hashCode;
 }
