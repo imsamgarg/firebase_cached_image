@@ -704,6 +704,125 @@ void main() {
     });
   });
 
+  group("clearCache", () {
+    //* Test when the clearCache will remove every file from the cache
+
+    test("when the clearCache will remove every file from the cache", () async {
+      final url1 = MockFirebaseUrl();
+      when(url1.uniqueId).thenReturn("1.jpg");
+      when(url1.url).thenReturn(Uri.parse("www.google.com"));
+      final bytes1 = Uint8List.fromList([1, 2, 3, 4, 5]);
+
+      final url2 = MockFirebaseUrl();
+      when(url2.uniqueId).thenReturn("2.jpg");
+      when(url2.url).thenReturn(Uri.parse("www.google.com"));
+      final bytes2 = Uint8List.fromList([6, 7, 8, 9, 10]);
+
+      final url3 = MockFirebaseUrl();
+      when(url3.uniqueId).thenReturn("3.jpg");
+      when(url3.url).thenReturn(Uri.parse("www.google.com"));
+      final bytes3 = Uint8List.fromList([11, 12, 13, 14, 15]);
+
+      when(cloudStorageManager.downloadLatestFile(url1)).thenAnswer(
+        (_) async => bytes1,
+      );
+
+      when(cloudStorageManager.downloadLatestFile(url2)).thenAnswer(
+        (_) async => bytes2,
+      );
+
+      when(cloudStorageManager.downloadLatestFile(url3)).thenAnswer(
+        (_) async => bytes3,
+      );
+
+      await cacheManager.getSingleObject(url1);
+      await cacheManager.getSingleObject(url2);
+      await cacheManager.getSingleObject(url3);
+
+      final isCached1 = await cacheManager.isCached(url1);
+      final isCached2 = await cacheManager.isCached(url2);
+      final isCached3 = await cacheManager.isCached(url3);
+
+      expect(isCached1, isTrue);
+      expect(isCached2, isTrue);
+      expect(isCached3, isTrue);
+
+      await cacheManager.clearCache();
+
+      final isCached1AfterClear = await cacheManager.isCached(url1);
+      final isCached2AfterClear = await cacheManager.isCached(url2);
+      final isCached3AfterClear = await cacheManager.isCached(url3);
+
+      expect(isCached1AfterClear, isFalse);
+      expect(isCached2AfterClear, isFalse);
+      expect(isCached3AfterClear, isFalse);
+    });
+
+    //* Test when the modifiedBefore is provided
+    test("when the modifiedBefore is provided", () async {
+      final url1 = MockFirebaseUrl();
+      when(url1.uniqueId).thenReturn("1.jpg");
+      when(url1.url).thenReturn(Uri.parse("www.google.com"));
+      final bytes1 = Uint8List.fromList([1, 2, 3, 4, 5]);
+
+      final url2 = MockFirebaseUrl();
+      when(url2.uniqueId).thenReturn("2.jpg");
+      when(url2.url).thenReturn(Uri.parse("www.google.com"));
+      final bytes2 = Uint8List.fromList([6, 7, 8, 9, 10]);
+
+      final url3 = MockFirebaseUrl();
+      when(url3.uniqueId).thenReturn("3.jpg");
+      when(url3.url).thenReturn(Uri.parse("www.google.com"));
+      final bytes3 = Uint8List.fromList([11, 12, 13, 14, 15]);
+
+      when(cloudStorageManager.downloadLatestFile(url1)).thenAnswer(
+        (_) async => bytes1,
+      );
+
+      when(cloudStorageManager.downloadLatestFile(url2)).thenAnswer(
+        (_) async => bytes2,
+      );
+
+      when(cloudStorageManager.downloadLatestFile(url3)).thenAnswer(
+        (_) async => bytes3,
+      );
+
+      final nowTime = DateTime.now();
+
+      manager.getNowTimeFunc = () => nowTime;
+
+      cacheManager.getNowTimeFunc =
+          () => nowTime.subtract(const Duration(seconds: 10));
+      await cacheManager.getSingleObject(url1);
+
+      cacheManager.getNowTimeFunc =
+          () => nowTime.subtract(const Duration(seconds: 5));
+      await cacheManager.getSingleObject(url2);
+
+      cacheManager.getNowTimeFunc =
+          () => nowTime.subtract(const Duration(seconds: 1));
+      await cacheManager.getSingleObject(url3);
+
+      final isCached1 = await cacheManager.isCached(url1);
+      final isCached2 = await cacheManager.isCached(url2);
+      final isCached3 = await cacheManager.isCached(url3);
+
+      expect(isCached1, isTrue);
+      expect(isCached2, isTrue);
+      expect(isCached3, isTrue);
+
+      await cacheManager.clearCache(modifiedBefore: const Duration(seconds: 5));
+
+      final isCached1AfterClear = await cacheManager.isCached(url1);
+      final isCached2AfterClear = await cacheManager.isCached(url2);
+      final isCached3AfterClear = await cacheManager.isCached(url3);
+
+      expect(isCached1AfterClear, isFalse);
+      expect(isCached2AfterClear, isTrue);
+      expect(isCached3AfterClear, isTrue);
+    });
+  });
+
   tearDown(() async {
     await db.delete(MobileDbCacheManager.tableName);
     await fsManager.deleteAllFiles();

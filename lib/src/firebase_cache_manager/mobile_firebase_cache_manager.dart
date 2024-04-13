@@ -47,7 +47,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       return CachedObject(
         id: firebaseUrl.uniqueId,
         url: firebaseUrl.url.toString(),
-        modifiedAt: DateTime.now().millisecondsSinceEpoch,
+        modifiedAt: getNowTimeFunc().millisecondsSinceEpoch,
         rawData: bytes,
       );
     }
@@ -78,7 +78,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       url: firebaseUrl.url.toString(),
       rawData: bytes,
       fullLocalPath: file.path,
-      modifiedAt: DateTime.now().millisecondsSinceEpoch,
+      modifiedAt: getNowTimeFunc().millisecondsSinceEpoch,
     );
 
     await Future.wait([
@@ -165,7 +165,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
           id: firebaseUrl.uniqueId,
           fullLocalPath: file.path,
           url: firebaseUrl.url.toString(),
-          modifiedAt: DateTime.now().millisecondsSinceEpoch,
+          modifiedAt: getNowTimeFunc().millisecondsSinceEpoch,
         ),
       ),
     ]);
@@ -228,7 +228,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
           id: firebaseUrl.uniqueId,
           fullLocalPath: file.path,
           url: firebaseUrl.url.toString(),
-          modifiedAt: DateTime.now().millisecondsSinceEpoch,
+          modifiedAt: getNowTimeFunc().millisecondsSinceEpoch,
         ),
       ),
     ]);
@@ -239,4 +239,10 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   void _digestError(Object error, StackTrace stackTrace) {
     //Do nothing for now
   }
+
+  @visibleForTesting
+  late DateTime Function() getNowTimeFunc = getNowTime;
+
+  @visibleForTesting
+  DateTime getNowTime() => DateTime.now();
 }
