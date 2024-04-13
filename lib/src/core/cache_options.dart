@@ -7,22 +7,26 @@ class CacheOptions {
   /// default: Source.cacheServer
   final Source source;
 
-  /// if this is set to true then a server call will be made to check whether
-  /// the file has been updated or not. If its updated then we will cache the
-  /// updated file in background.
+  /// if this is set to true then a server call will be made to check whether the
+  /// file has been updated on the server or not. If its updated then we will download the latest file and the save it in the cache.
   ///
   /// Default false.
-  final bool checkForMetadataChange;
+  final bool checkIfFileUpdatedOnServer;
 
   /// Control how file gets fetched and cached
   const CacheOptions({
-    this.checkForMetadataChange = false,
+    @Deprecated('Use [checkIfFileUpdatedOnServer] instead')
+    bool checkForMetadataChange = false,
+    bool checkIfFileUpdatedOnServer = false,
     this.source = Source.cacheServer,
-  });
+  })
+  // For backward compatibility
+  : checkIfFileUpdatedOnServer =
+            checkForMetadataChange || checkIfFileUpdatedOnServer;
 
   @override
   String toString() =>
-      'CacheOptions(source: $source, checkForMetadataChange: $checkForMetadataChange)';
+      'CacheOptions(source: $source, checkIfFileUpdatedOnServer: $checkIfFileUpdatedOnServer)';
 
   @override
   bool operator ==(Object other) {
@@ -30,9 +34,9 @@ class CacheOptions {
 
     return other is CacheOptions &&
         other.source == source &&
-        other.checkForMetadataChange == checkForMetadataChange;
+        other.checkIfFileUpdatedOnServer == checkIfFileUpdatedOnServer;
   }
 
   @override
-  int get hashCode => source.hashCode ^ checkForMetadataChange.hashCode;
+  int get hashCode => source.hashCode ^ checkIfFileUpdatedOnServer.hashCode;
 }

@@ -56,7 +56,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
     if (image != null) {
       if (file.existsSync()) {
-        if (!options.checkForMetadataChange) {
+        if (!options.checkIfFileUpdatedOnServer) {
           return image.copyWith(rawData: await file.readAsBytes());
         }
 
@@ -109,7 +109,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     }
 
     /// Refresh cache file in background
-    if (options.checkForMetadataChange) {
+    if (options.checkIfFileUpdatedOnServer) {
       await _refreshCachedFile(
         firebaseUrl,
         cachedObject: cachedObject,
