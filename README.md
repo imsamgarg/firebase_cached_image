@@ -6,10 +6,13 @@ Cache Manager and Cached ImageProvider for Firebase Cloud Storage Objects.
 
 Setup firebase (https://firebase.google.com/docs/flutter/setup).
 
+## Note
+
+No support for caching in web, everything will be downloaded from server.
+
 ## Firebase Image Provider
 
-If you want to show image from your cloud storage then use `Image` Widget and pass `FirebaseImageProvider` as `ImageProvider` to image argument. In `FirebaseImageProvider` pass `FirebaseUrl`.
-`FirebaseUrl` is a class containing Google Storage Url String ex. `FirebaseUrl(gs://bucket_f233/logo.jpg)`.
+If you want to show image from your cloud storage then pass `FirebaseImageProvider` as `ImageProvider` to `Image` Widget. In `FirebaseImageProvider` pass `FirebaseUrl`.
 
 ```dart
 Image(
@@ -18,6 +21,7 @@ Image(
   ),
 ),
 ```
+
 
 You can declare `FirebaseUrl` in following ways:
 
@@ -42,10 +46,8 @@ Image(
     errorBuilder: (context, error, stackTrace) {
       // [ImageNotFoundException] will be thrown if image does not exist on server.
       if (error is ImageNotFoundException) {
-        // Handle ImageNotFoundException and show a user-friendly message.
         return const Text('Image not found on Cloud Storage.');
       } else {
-        // Handle other errors.
         return Text('Error loading image: $error');
       }
     },
@@ -56,13 +58,7 @@ Image(
         // Show the loaded image if loading is complete.
         return child;
       } else {
-        // Show a loading indicator with progress information.
-        return CircularProgressIndicator(
-          value: loadingProgress.expectedTotalBytes != null
-              ? loadingProgress.cumulativeBytesLoaded /
-                  (loadingProgress.expectedTotalBytes ?? 1)
-              : null,
-        );
+        return CircularProgressIndicator();
       }
     },
   ),
@@ -77,10 +73,10 @@ If you want to always fetch latest image from server then pass `Source.server` t
   source: Source.server,
 ```
 
-If you want to fetch image from server only if it is updated after last fetched then set `checkForMetadataChange` to `false`.
+If you want to fetch image from server only if it is updated after last fetched then set `checkIfFileUpdatedOnServer` to `false`.
 
 ```dart
-  checkForMetadataChange: true,
+  checkIfFileUpdatedOnServer: true,
 ```
 
 Image updation is checked by fetching image's metadata (modified timestamp) from server then comparing to cached image's metadata (modified timestamp).
@@ -120,6 +116,20 @@ await FirebaseCacheManager().refreshCachedFile(
 );
 ```
 
+Copy file to cache
+
+
+To manually copy file to cache, use this method. To avoid downloading the file again. It will copy the file from [filePath] to cache and return the cached file path.
+
+
+```dart
+final filePath = "/storage/file.jpg";
+final cachedFilePath = await FirebaseCacheManager().copyToCache(
+  FirebaseUrl("gs://bucket_f233/profile_pic.jpg"),
+  filePath,
+)
+```
+
 Delete specific file from cache.
 
 ```dart
@@ -132,6 +142,9 @@ Clear all the cache.
 
 ```dart
 await FirebaseCacheManager().clearCache();
+
+// Delete files older than 20 days
+await FirebaseCacheManager().clearCache(modifiedBefore: Duration(days: 20));
 ```
 
 Use custom sub-directory to save files in desired directory in system's temporary directory. Default is "flutter_cached_image"
@@ -151,4 +164,3 @@ await postsCacheManger.clearCache();
 
 ```
 
-_No support for caching in web, everything will be downloaded from server._

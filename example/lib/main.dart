@@ -47,7 +47,7 @@ class _MyHomePageState extends State<MyHomePage> {
               source: Source.server,
               // Check if the image is updated on the server or not, if updated then download the latest image otherwise use the cached image.
               // Will only be used if the options.source is Source.cacheServer
-              checkForMetadataChange: true,
+              checkIfFileUpdatedOnServer: true,
             ),
             // Use this to save files in desired directory in system's temporary directory
             // Optional. default is "flutter_cached_image"
@@ -56,10 +56,8 @@ class _MyHomePageState extends State<MyHomePage> {
           errorBuilder: (context, error, stackTrace) {
             // [ImageNotFoundException] will be thrown if image does not exist on server.
             if (error is ImageNotFoundException) {
-              // Handle ImageNotFoundException and show a user-friendly message.
               return const Text('Image not found on Cloud Storage.');
             } else {
-              // Handle other errors.
               return Text('Error loading image: $error');
             }
           },
@@ -70,13 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
               // Show the loaded image if loading is complete.
               return child;
             } else {
-              // Show a loading indicator with progress information.
-              return CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                        (loadingProgress.expectedTotalBytes ?? 1)
-                    : null,
-              );
+              return const CircularProgressIndicator();
             }
           },
         ),
