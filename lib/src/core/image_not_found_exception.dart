@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 
 class ImageNotFoundException {
   final FirebaseUrl firebaseUrl;
-  final PlatformException originalExecption;
+  final PlatformException originalException;
   final StackTrace originalStackTrace;
 
-  ImageNotFoundException(
+  const ImageNotFoundException(
     this.firebaseUrl,
-    this.originalExecption,
+    this.originalException,
     this.originalStackTrace,
   );
 
