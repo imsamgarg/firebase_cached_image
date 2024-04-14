@@ -1,7 +1,7 @@
 import 'package:firebase_cached_image/src/helper_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as path;
 
 /// The FirebaseUrl of the Cloud Storage image
 class FirebaseUrl {
@@ -25,12 +25,12 @@ class FirebaseUrl {
     final _url = Uri.parse(url);
     final ref = getRefFromUrl(url, app);
     final urlStr = _url.toString();
-    final String uniqueId = getUniqueId(urlStr) + extension(urlStr);
+    final String uniqueId = getUniqueId(urlStr) + path.extension(urlStr);
 
     return FirebaseUrl._(_url, ref, uniqueId);
   }
 
-  FirebaseUrl._(this.url, this.ref, this.uniqueId);
+  const FirebaseUrl._(this.url, this.ref, this.uniqueId);
 
   /// Initialize from [Reference]..
   /// ```
@@ -39,7 +39,7 @@ class FirebaseUrl {
   factory FirebaseUrl.fromReference(Reference ref) {
     final url = getUrlFromRef(ref);
     final urlStr = url.toString();
-    final String uniqueId = getUniqueId(urlStr) + extension(urlStr);
+    final String uniqueId = getUniqueId(urlStr) + path.extension(urlStr);
 
     return FirebaseUrl._(url, ref, uniqueId);
   }
@@ -58,5 +58,5 @@ class FirebaseUrl {
   }
 
   @override
-  int get hashCode => url.hashCode ^ ref.hashCode ^ uniqueId.hashCode;
+  int get hashCode => Object.hash(url, ref, uniqueId);
 }

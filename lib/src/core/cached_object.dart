@@ -8,7 +8,8 @@ class CachedObject {
   final String url;
   final int modifiedAt;
   final Uint8List? rawData;
-  CachedObject({
+
+  const CachedObject({
     required this.id,
     this.fullLocalPath,
     required this.url,
@@ -21,7 +22,6 @@ class CachedObject {
     String? fullLocalPath,
     String? uri,
     int? modifiedAt,
-    int? lastAccessedAt,
     Uint8List? rawData,
   }) {
     return CachedObject(
@@ -43,7 +43,7 @@ class CachedObject {
     };
   }
 
-  factory CachedObject.fromMap(dynamic map) {
+  factory CachedObject.fromMap(Map<String, dynamic> map) {
     return CachedObject(
       id: map['id'] as String,
       fullLocalPath: map['fullLocalPath'] as String?,
@@ -67,15 +67,9 @@ class CachedObject {
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        fullLocalPath.hashCode ^
-        url.hashCode ^
-        modifiedAt.hashCode ^
-        rawData.hashCode;
+    return Object.hash(id, fullLocalPath, url, modifiedAt, rawData);
   }
 
   @override
-  String toString() {
-    return 'CachedImage(id: $id, fullLocalPath: $fullLocalPath, uri: $url, modifiedAt: $modifiedAt, rawData: $rawData)';
-  }
+  String toString() => 'CachedImage(${toMap()})';
 }

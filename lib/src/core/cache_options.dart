@@ -38,5 +38,5 @@ class CacheOptions {
   }
 
   @override
-  int get hashCode => source.hashCode ^ checkIfFileUpdatedOnServer.hashCode;
+  int get hashCode => Object.hash(source, checkIfFileUpdatedOnServer);
 }
