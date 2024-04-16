@@ -5,6 +5,7 @@
 - Fixed `FirebaseCacheManager.clearCache` method not clearing db entries.
 - `FirebaseCacheManager.copyToCache` method added
 - Tests added
+- Minor fixes ([#19](https://github.com/imsamgarg/firebase_cached_image/pull/19))
 
 ## 0.5.3
 
