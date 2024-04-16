@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:firebase_cached_image/src/cloud_storage_manager/native_cloud_storage_manage.dart';
 import 'package:firebase_cached_image/src/core/cached_object.dart';
@@ -9,7 +11,7 @@ import 'package:flutter/foundation.dart';
 class FirebaseCacheManager extends BaseFirebaseCacheManager {
   final String _subDir;
 
-  FirebaseCacheManager({super.subDir})
+  FirebaseCacheManager({super.subDir, super.encryption})
       : _cacheManager = MobileDbCacheManager(),
         _fs = FsManager(subDir: subDir ?? kDefaultImageCacheDir),
         _subDir = subDir ?? kDefaultImageCacheDir,
@@ -21,6 +23,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     required FsManager fs,
     required NativeCloudStorageManager cloudStorageManager,
     required String subDir,
+    super.encryption,
   })  : _cacheManager = cacheManager,
         _fs = fs,
         _subDir = subDir,
@@ -57,7 +60,9 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     if (image != null) {
       if (file.existsSync()) {
         if (!options.checkIfFileUpdatedOnServer) {
-          return image.copyWith(rawData: await file.readAsBytes());
+          final data = await file.readAsBytes();
+
+          return image.copyWith(rawData: await getDecryptedBytes(data));
         }
 
         final isUpdated = await _cloudStorageManager.isUpdated(
@@ -66,7 +71,9 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
         );
 
         if (!isUpdated) {
-          return image.copyWith(rawData: await file.readAsBytes());
+          final data = await file.readAsBytes();
+
+          return image.copyWith(rawData: await getDecryptedBytes(data));
         }
       }
     }
@@ -81,8 +88,10 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       modifiedAt: getNowTimeFunc().millisecondsSinceEpoch,
     );
 
+    final encryptedBytes = await getEncryptedBytes(bytes!);
+
     await Future.wait([
-      file.writeAsBytes(bytes!),
+      file.writeAsBytes(encryptedBytes),
       _cacheManager.put(cachedObject),
     ]);
 
@@ -158,6 +167,27 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   Future<String> downloadToCache(FirebaseUrl firebaseUrl) async {
     final file = await _fs.getFile(firebaseUrl.uniqueId);
 
+    /// If encryption is enabled, download the file and encrypt it before saving to cache.
+    if (encryption != null) {
+      final bytes = await _cloudStorageManager.downloadLatestFile(firebaseUrl);
+
+      final encryptedBytes = await getEncryptedBytes(bytes!);
+
+      await Future.wait([
+        file.writeAsBytes(encryptedBytes),
+        _cacheManager.put(
+          CachedObject(
+            id: firebaseUrl.uniqueId,
+            fullLocalPath: file.path,
+            url: firebaseUrl.url.toString(),
+            modifiedAt: getNowTimeFunc().millisecondsSinceEpoch,
+          ),
+        ),
+      ]);
+
+      return file.path;
+    }
+
     await Future.wait([
       _cloudStorageManager.writeToFile(firebaseUrl, file),
       _cacheManager.put(
@@ -221,6 +251,27 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
     if (file.existsSync()) return file.path;
 
+    /// If encryption is enabled, read the file contents, encrypt it and write it.
+    if (encryption != null) {
+      final bytes = await _fs.file(filePath).readAsBytes();
+
+      final encryptedBytes = await getEncryptedBytes(bytes);
+
+      await Future.wait([
+        file.writeAsBytes(encryptedBytes),
+        _cacheManager.put(
+          CachedObject(
+            id: firebaseUrl.uniqueId,
+            fullLocalPath: file.path,
+            url: firebaseUrl.url.toString(),
+            modifiedAt: getNowTimeFunc().millisecondsSinceEpoch,
+          ),
+        ),
+      ]);
+
+      return file.path;
+    }
+
     await Future.wait([
       _fs.file(filePath).copy(file.path),
       _cacheManager.put(
@@ -238,6 +289,16 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
   void _digestError(Object error, StackTrace stackTrace) {
     //Do nothing for now
+  }
+
+  @visibleForTesting
+  FutureOr<Uint8List> getDecryptedBytes(Uint8List data) {
+    return encryption?.decrypt(data) ?? data;
+  }
+
+  @visibleForTesting
+  FutureOr<Uint8List> getEncryptedBytes(Uint8List data) {
+    return encryption?.encrypt(data) ?? data;
   }
 
   @visibleForTesting

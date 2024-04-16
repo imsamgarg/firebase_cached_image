@@ -1,5 +1,6 @@
 import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:firebase_cached_image/src/core/cached_object.dart';
+import 'package:firebase_cached_image/src/encryption_manager/encryption_manager.dart';
 
 const kDefaultImageCacheDir = "flutter_cached_image";
 
@@ -10,7 +11,14 @@ abstract class BaseFirebaseCacheManager {
   /// Default: ["flutter_cached_image"]
   final String? subDir;
 
-  BaseFirebaseCacheManager({this.subDir});
+  BaseFirebaseCacheManager({this.subDir, this.encryption});
+
+  /// Encryption Manager
+  ///
+  /// Use this to encrypt and decrypt the file before saving and after fetching from cache.
+  ///
+  /// Note: Encryption is not supported on web.
+  final EncryptionManager? encryption;
 
   /// Fetch, cache and returns the localFilePath for Cloud Storage File.
   ///

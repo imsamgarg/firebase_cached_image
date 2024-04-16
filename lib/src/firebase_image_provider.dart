@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:firebase_cached_image/firebase_cached_image.dart';
+import 'package:firebase_cached_image/src/encryption_manager/encryption_manager.dart';
 import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_cache_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,11 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   ///
   /// Default: ["flutter_cached_image"]
   final String _subDir;
+
+  /// Encryption Manager
+  ///
+  /// Use this to encrypt and decrypt the file before saving and after fetching from cache.
+  final EncryptionManager? encryption;
 
   /// Fetch, cache and return ImageProvider for Cloud Storage Image Objects.
   ///
@@ -97,6 +103,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   /// ```
   FirebaseImageProvider(
     this.firebaseUrl, {
+    this.encryption,
     this.options = const CacheOptions(),
     this.scale = 1.0,
     this.maxSize = 10485760,
@@ -158,8 +165,10 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
         ),
       );
 
-      final cachedObject =
-          await FirebaseCacheManager(subDir: _subDir).getSingleObject(
+      final manager =
+          FirebaseCacheManager(subDir: _subDir, encryption: encryption);
+
+      final cachedObject = await manager.getSingleObject(
         firebaseUrl,
         options: options,
       );
@@ -206,7 +215,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
 
   @override
   String toString() {
-    return 'FirebaseImageProvider(options: $options, maxSize: $maxSize, scale: $scale, firebaseUrl: $firebaseUrl, subDir: $_subDir)';
+    return 'FirebaseImageProvider(options: $options, maxSize: $maxSize, scale: $scale, firebaseUrl: $firebaseUrl, _subDir: $_subDir, encryption: $encryption)';
   }
 
   @override
@@ -218,7 +227,8 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
         other.maxSize == maxSize &&
         other.scale == scale &&
         other.firebaseUrl == firebaseUrl &&
-        other._subDir == _subDir;
+        other._subDir == _subDir &&
+        other.encryption == encryption;
   }
 
   @override
@@ -229,6 +239,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
       scale.hashCode,
       firebaseUrl.hashCode,
       _subDir.hashCode,
+      encryption.hashCode,
     );
   }
 }

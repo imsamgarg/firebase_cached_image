@@ -2,7 +2,7 @@ import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_c
 
 /// [FirebaseCacheManager]
 class FirebaseCacheManager extends BaseFirebaseCacheManager {
-  FirebaseCacheManager({super.subDir});
+  FirebaseCacheManager({super.subDir, super.encryption});
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
