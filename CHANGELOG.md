@@ -1,3 +1,7 @@
+## 0.6.1 
+
+- Update firebase_core and firebase_storage dependencies' max version
+
 ## 0.6.0
 
 - `CacheOptions.metadataRefreshInBackground` field removed (Breaking).
