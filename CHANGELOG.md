@@ -1,3 +1,8 @@
+## 0.6.2
+
+- Feat: Fallback url support added in `FirebaseImageProvider`
+- Fix: ImageNotFoundException not thrown when the file is not found on the server
+
 ## 0.6.1 
 
 - Update firebase_core and firebase_storage dependencies' max version
