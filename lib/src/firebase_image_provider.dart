@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:firebase_cached_image/src/core/cached_object.dart';
 import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_cache_manager.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -228,9 +229,8 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   }
 
   bool _isObjectNotFoundError(Object e) {
-    if (e is PlatformException) {
-      final details = e.details;
-      if (details is Map && details["code"] == "object-not-found") {
+    if (e is FirebaseException) {
+      if (e.code == "object-not-found") {
         return true;
       }
     }
