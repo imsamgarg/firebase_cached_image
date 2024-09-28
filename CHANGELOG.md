@@ -1,3 +1,8 @@
+## 0.6.3
+
+- Fix: Invalid type cast in image not found check
+- Breaking: ImageNotFoundException.originalException is now of type `Object` instead of `PlatformException`
+
 ## 0.6.2
 
 - Feat: Fallback url support added in `FirebaseImageProvider`
