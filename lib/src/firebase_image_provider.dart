@@ -194,7 +194,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
       });
 
       if (_isObjectNotFoundError(e)) {
-        throw ImageNotFoundException(firebaseUrl, e as PlatformException, s);
+        throw ImageNotFoundException(firebaseUrl, e, s);
       }
 
       rethrow;
