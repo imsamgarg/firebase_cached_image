@@ -7,7 +7,6 @@ import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_c
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 /// Fetch, cache and return ImageProvider for Cloud Storage Image Objects.
 class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
@@ -139,12 +138,12 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   @override
   ImageStreamCompleter loadBuffer(
     FirebaseImageProvider key,
-    DecoderBufferCallback decode,
+    Future<Codec> Function(ImmutableBuffer buffer) decode,
   ) {
     final chunkEvents = StreamController<ImageChunkEvent>();
 
     return MultiFrameImageStreamCompleter(
-      codec: _loadAsync(key, chunkEvents, (buffer) => decode(buffer)),
+      codec: _loadAsync(key, chunkEvents, decode),
       scale: key.scale,
       chunkEvents: chunkEvents.stream,
       debugLabel: key.firebaseUrl.url.toString(),

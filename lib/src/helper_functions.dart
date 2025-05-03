@@ -14,5 +14,5 @@ Reference getRefFromUrl(String url, FirebaseApp? app) {
 }
 
 String getUniqueId(String url) {
-  return const Uuid().v5(Uuid.NAMESPACE_URL, url);
+  return const Uuid().v5(Namespace.url.value, url);
 }
