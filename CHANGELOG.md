@@ -1,3 +1,7 @@
+## 0.7.0
+
+- Feat: Added Wasm compilation support
+
 ## 0.6.3
 
 - Fix: Invalid type cast in image not found check
