@@ -7,11 +7,16 @@ class CacheOptions {
   /// default: Source.cacheServer
   final Source source;
 
-  /// if this is set to true then a server call will be made to check whether the
+  /// If this is set to true then a server call will be made to check whether the
   /// file has been updated on the server or not. If its updated then we will download the latest file and the save it in the cache.
   ///
   /// Default false.
   final bool checkIfFileUpdatedOnServer;
+
+  /// For how much time the file is valid in the cache.
+  ///
+  /// Note: If this is specified then the [checkIfFileUpdatedOnServer] will be ignored.
+  final Duration? maxAge;
 
   /// Control how file gets fetched and cached
   const CacheOptions({
@@ -19,6 +24,7 @@ class CacheOptions {
     bool checkForMetadataChange = false,
     bool checkIfFileUpdatedOnServer = false,
     this.source = Source.cacheServer,
+    this.maxAge,
   })
   // For backward compatibility
   : checkIfFileUpdatedOnServer =
@@ -26,7 +32,7 @@ class CacheOptions {
 
   @override
   String toString() =>
-      'CacheOptions(source: $source, checkIfFileUpdatedOnServer: $checkIfFileUpdatedOnServer)';
+      'CacheOptions(source: $source, checkIfFileUpdatedOnServer: $checkIfFileUpdatedOnServer, maxAge: $maxAge)';
 
   @override
   bool operator ==(Object other) {
@@ -34,9 +40,10 @@ class CacheOptions {
 
     return other is CacheOptions &&
         other.source == source &&
-        other.checkIfFileUpdatedOnServer == checkIfFileUpdatedOnServer;
+        other.checkIfFileUpdatedOnServer == checkIfFileUpdatedOnServer &&
+        other.maxAge == maxAge;
   }
 
   @override
-  int get hashCode => Object.hash(source, checkIfFileUpdatedOnServer);
+  int get hashCode => Object.hash(source, checkIfFileUpdatedOnServer, maxAge);
 }

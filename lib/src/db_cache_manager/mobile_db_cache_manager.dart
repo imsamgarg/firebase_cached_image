@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_cached_image/src/core/cached_object.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -23,7 +24,10 @@ class MobileDbCacheManager {
     return openDatabase(
       _dbPath,
       onCreate: createDb,
-      version: 1,
+      onUpgrade: upgradeDb,
+      // 1. Initial version
+      // 2. Added 'maxAge' number field
+      version: 2,
     );
   }
 
@@ -101,7 +105,8 @@ class MobileDbCacheManager {
       id TEXT PRIMARY KEY,
       fullLocalPath TEXT,
       uri TEXT,
-      modifiedAt INTEGER
+      modifiedAt INTEGER,
+      maxAge INTEGER
     )
     ''',
     );
@@ -121,4 +126,13 @@ ON $tableName (id);
 
   @visibleForTesting
   DateTime getNowTime() => DateTime.now();
+
+  @visibleForTesting
+  static Future<void> upgradeDb(Database db, int oldV, int newV) async {
+    if (oldV < 2) {
+      await db.execute("""
+ALTER TABLE $tableName ADD COLUMN maxAge INTEGER;
+      """);
+    }
+  }
 }

@@ -7,6 +7,7 @@ class CachedObject {
   final String? fullLocalPath;
   final String url;
   final int modifiedAt;
+  final Duration? maxAge;
   final Uint8List? rawData;
 
   const CachedObject({
@@ -14,6 +15,7 @@ class CachedObject {
     this.fullLocalPath,
     required this.url,
     required this.modifiedAt,
+    this.maxAge,
     this.rawData,
   });
 
@@ -23,6 +25,7 @@ class CachedObject {
     String? uri,
     int? modifiedAt,
     Uint8List? rawData,
+    Duration? maxAge,
   }) {
     return CachedObject(
       id: id ?? this.id,
@@ -30,6 +33,7 @@ class CachedObject {
       url: uri ?? url,
       modifiedAt: modifiedAt ?? this.modifiedAt,
       rawData: rawData ?? this.rawData,
+      maxAge: maxAge ?? this.maxAge,
     );
   }
 
@@ -40,6 +44,7 @@ class CachedObject {
       'uri': url,
       'modifiedAt': modifiedAt,
       if (rawData != null) 'rawData': rawData,
+      if (maxAge != null) 'maxAge': maxAge!.inSeconds,
     };
   }
 
@@ -50,6 +55,9 @@ class CachedObject {
       url: map['uri'] as String,
       modifiedAt: map['modifiedAt'] as int? ?? -1,
       rawData: map['rawData'] != null ? (map['rawData'] as Uint8List) : null,
+      maxAge: map['maxAge'] != null
+          ? (Duration(seconds: map['maxAge'] as int))
+          : null,
     );
   }
 
@@ -62,12 +70,13 @@ class CachedObject {
         other.fullLocalPath == fullLocalPath &&
         other.url == url &&
         other.modifiedAt == modifiedAt &&
-        other.rawData == rawData;
+        other.rawData == rawData &&
+        other.maxAge == maxAge;
   }
 
   @override
   int get hashCode {
-    return Object.hash(id, fullLocalPath, url, modifiedAt, rawData);
+    return Object.hash(id, fullLocalPath, url, modifiedAt, rawData, maxAge);
   }
 
   @override
