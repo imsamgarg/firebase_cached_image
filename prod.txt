@@ -1,0 +1,10 @@
+Shopify Custom App
+
+Flow:
+
+1. There will be input field to enter OrderID
+2. On clicking the button, it will fetch the order details from Shopify API
+3. It will display the products in the order
+4. The user can edit every product to change the metafields like delivery date, delivery slot.
+5. On clicking the save button, it will update the metafields using the Shopify API
+

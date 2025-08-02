@@ -3,7 +3,9 @@ import 'dart:ui';
 
 import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:firebase_cached_image/src/encryption_manager/encryption_manager.dart';
+import 'package:firebase_cached_image/src/core/cached_object.dart';
 import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_cache_manager.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -37,6 +39,12 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   ///
   /// ```
   final FirebaseUrl firebaseUrl;
+
+  /// The FirebaseUrl of the Cloud Storage image to use as a fallback if the primary [firebaseUrl] is not found.
+  final FirebaseUrl? fallbackUrl;
+
+  /// Control how fallback image gets fetched and cached
+  final CacheOptions fallbackOptions;
 
   /// Use this to save files in desired directory in system's temporary directory
   ///
@@ -107,6 +115,8 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
     this.options = const CacheOptions(),
     this.scale = 1.0,
     this.maxSize = 10485760,
+    this.fallbackOptions = const CacheOptions(),
+    this.fallbackUrl,
 
     /// Use this to save files in desired directory in system's temporary directory
     ///
@@ -172,6 +182,8 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
         firebaseUrl,
         options: options,
       );
+      final CachedObject cachedObject =
+          await _getCachedObject(firebaseUrl, options);
 
       final bytes = cachedObject.rawData;
 
@@ -195,17 +207,49 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
         PaintingBinding.instance.imageCache.evict(key);
       });
 
-      if (e is PlatformException) {
-        final details = e.details;
-        if (details is Map && details["code"] == "object-not-found") {
-          throw ImageNotFoundException(firebaseUrl, e, s);
-        }
+      if (_isObjectNotFoundError(e)) {
+        throw ImageNotFoundException(firebaseUrl, e, s);
       }
 
       rethrow;
     } finally {
       chunkEvents.close();
     }
+  }
+
+  Future<CachedObject> _getCachedObject(
+    FirebaseUrl url,
+    CacheOptions options,
+  ) async {
+    try {
+      final cachedObject =
+          await FirebaseCacheManager(subDir: _subDir).getSingleObject(
+        url,
+        options: options,
+      );
+
+      return cachedObject;
+    } catch (e) {
+      if (url == fallbackUrl) {
+        rethrow;
+      }
+
+      if (fallbackUrl != null && _isObjectNotFoundError(e)) {
+        return _getCachedObject(fallbackUrl!, fallbackOptions);
+      }
+
+      rethrow;
+    }
+  }
+
+  bool _isObjectNotFoundError(Object e) {
+    if (e is FirebaseException) {
+      if (e.code == "object-not-found") {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   @override
@@ -216,6 +260,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   @override
   String toString() {
     return 'FirebaseImageProvider(options: $options, maxSize: $maxSize, scale: $scale, firebaseUrl: $firebaseUrl, _subDir: $_subDir, encryption: $encryption)';
+    return 'FirebaseImageProvider(options: $options, maxSize: $maxSize, scale: $scale, firebaseUrl: $firebaseUrl, fallbackUrl: $fallbackUrl, fallbackOptions: $fallbackOptions, subDir: $_subDir)';
   }
 
   @override
@@ -229,6 +274,9 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
         other.firebaseUrl == firebaseUrl &&
         other._subDir == _subDir &&
         other.encryption == encryption;
+        other.fallbackUrl == fallbackUrl &&
+        other.fallbackOptions == fallbackOptions &&
+        other._subDir == _subDir;
   }
 
   @override
@@ -240,6 +288,13 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
       firebaseUrl.hashCode,
       _subDir.hashCode,
       encryption.hashCode,
+      options,
+      maxSize,
+      scale,
+      firebaseUrl,
+      fallbackUrl,
+      fallbackOptions,
+      _subDir,
     );
   }
 }
