@@ -1,3 +1,7 @@
+## 0.8.0
+
+- Refactor: updated firebase_core and firebase_storage version constraints (#25)
+
 ## 0.7.0
 
 - Feat: Added Wasm compilation support
