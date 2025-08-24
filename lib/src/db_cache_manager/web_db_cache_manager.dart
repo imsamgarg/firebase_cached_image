@@ -71,8 +71,19 @@ class WebDbCacheManager {
       if (result == null) {
         complete.complete(null);
       } else {
-        final data = CachedObject.fromMap(
-            ((result as JSObject).dartify()! as Map).cast());
+        CachedObject? data;
+
+        if (result is Map) {
+          data = CachedObject.fromMap(result.cast());
+        } else {
+          // WARN: Not sure about this case
+          data = CachedObject.fromMap(
+              ((result as JSObject).dartify()! as Map).cast());
+        }
+
+        if (data.rawData == null) {
+          return complete.complete(null);
+        }
 
         complete.complete(data);
       }
@@ -94,7 +105,7 @@ class WebDbCacheManager {
 
     data["subDir"] = subDir ?? kDefaultImageCacheDir;
 
-    final req = store.put(data.jsify(), object.id.toJS);
+    final req = store.put(data.jsify());
 
     req.onerror = ((web.Event event) {
       final error = Exception("Failed to put object: ${event.target}");
@@ -130,7 +141,7 @@ class WebDbCacheManager {
   }
 
   Future<void> clear({
-    required String subDir,
+    String? subDir,
   }) async {
     final complete = Completer<void>();
 
@@ -141,7 +152,7 @@ class WebDbCacheManager {
 
     final index = store.index("subDir");
 
-    index.delete(subDir.toJS);
+    index.delete((subDir ?? kDefaultImageCacheDir).toJS);
 
     txn.onerror = ((web.Event event) {
       final error = Exception("Failed to clear objects: ${event.target}");

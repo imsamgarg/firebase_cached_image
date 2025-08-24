@@ -1,17 +1,21 @@
-import 'package:firebase_cached_image/src/core/cache_options.dart';
+import 'package:firebase_cached_image/firebase_cached_image.dart';
 import 'package:firebase_cached_image/src/core/cached_object.dart';
-import 'package:firebase_cached_image/src/core/firebase_url.dart';
+import 'package:firebase_cached_image/src/db_cache_manager/web_db_cache_manager.dart';
 import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_cache_manager.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class FirebaseCacheManager extends BaseFirebaseCacheManager {
+  late final WebDbCacheManager _webDbCacheManager = WebDbCacheManager();
+
   FirebaseCacheManager({super.subDir});
 
   @override
-  Future<void> clearCache({Duration? modifiedBefore}) => Future.value();
+  Future<void> clearCache({Duration? modifiedBefore}) =>
+      _webDbCacheManager.clear(subDir: subDir);
 
   @override
-  Future<void> delete(FirebaseUrl firebaseUrl) => Future.value();
+  Future<void> delete(FirebaseUrl firebaseUrl) =>
+      _webDbCacheManager.delete(firebaseUrl.uniqueId);
 
   @override
   Future<String> getSingleFile(
@@ -23,18 +27,67 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   }
 
   @override
-  Future<void> preCacheFile(FirebaseUrl firebaseUrl) => Future.value();
+  Future<void> preCacheFile(FirebaseUrl firebaseUrl) =>
+      _fetchFromServer(firebaseUrl).then((value) => _saveToCache(value));
 
   @override
-  Future<void> refreshCachedFile(FirebaseUrl firebaseUrl) => Future.value();
+  Future<void> refreshCachedFile(FirebaseUrl firebaseUrl) => _refreshFile(
+        const CacheOptions(checkIfFileUpdatedOnServer: true),
+        firebaseUrl,
+      ).then((value) => _saveToCache(value));
 
   @override
   Future<CachedObject> getSingleObject(
     FirebaseUrl firebaseUrl, {
-    //Cache options are ignored in web
     CacheOptions options = const CacheOptions(),
     int maxSize = 10485760,
   }) async {
+    switch (options.source) {
+      case Source.server:
+        return _fetchFromServer(firebaseUrl, maxSize);
+      case Source.cacheServer:
+        return await _refreshFile(options, firebaseUrl, maxSize);
+    }
+  }
+
+  Future<CachedObject> _refreshFile(
+    CacheOptions options,
+    FirebaseUrl firebaseUrl, [
+    int maxSize = 10485760,
+  ]) async {
+    if (options.checkIfFileUpdatedOnServer) {
+      final cachedObject = await _webDbCacheManager.get(firebaseUrl.uniqueId);
+
+      if (cachedObject == null) {
+        return _fetchFromServerAndCache(firebaseUrl, maxSize);
+      }
+
+      final meta = await firebaseUrl.ref.getMetadata();
+
+      if (meta.updated != null &&
+          meta.updated!.millisecondsSinceEpoch > cachedObject.modifiedAt) {
+        return _fetchFromServerAndCache(firebaseUrl, maxSize);
+      }
+
+      return cachedObject;
+    } else {
+      final cachedObject = await _webDbCacheManager.get(firebaseUrl.uniqueId);
+
+      if (cachedObject != null) {
+        return cachedObject;
+      }
+
+      return _fetchFromServerAndCache(firebaseUrl, maxSize);
+    }
+  }
+
+  Future<void> _saveToCache(CachedObject object) =>
+      _webDbCacheManager.put(object, subDir: subDir);
+
+  Future<CachedObject> _fetchFromServer(
+    FirebaseUrl firebaseUrl, [
+    int maxSize = 10485760,
+  ]) async {
     final bytes = await firebaseUrl.ref.getData(maxSize);
 
     return CachedObject(
@@ -45,10 +98,21 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     );
   }
 
+  Future<CachedObject> _fetchFromServerAndCache(
+    FirebaseUrl firebaseUrl, [
+    int maxSize = 10485760,
+  ]) async {
+    final object = await _fetchFromServer(firebaseUrl, maxSize);
+
+    // Save in bg
+    _saveToCache(object);
+
+    return object;
+  }
+
   @override
-  Future<bool> isCached(FirebaseUrl firebaseUrl) {
-    //Always return false on web.
-    return Future.value(false);
+  Future<bool> isCached(FirebaseUrl firebaseUrl) async {
+    return (await _webDbCacheManager.get(firebaseUrl.uniqueId)) != null;
   }
 
   @override
