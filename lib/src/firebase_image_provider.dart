@@ -20,21 +20,16 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   final double scale;
 
   /// The FirebaseUrl of the Cloud Storage image
-  ///
-  /// example:
-  /// ```
+  /// ```dart
   /// FirebaseUrl("gs://bucket_f233/logo.jpg")
   /// FirebaseUrl("https://firebasestorage.googleapis.com/b/bucket/o/logo.jpg")
   /// FirebaseUrl.fromReference(FirebaseStorage.instance.ref("images/image.jpg"));
   /// ```
   ///
-  /// you can specify [FirebaseApp] if you are multiple firebase projects in app
-  /// ex:
-  ///
-  /// ```
+  /// You can specify [FirebaseApp] if you are multiple firebase projects in app
+  /// ```dart
   /// FirebaseUrl("gs://bucket_f233/logo.jpg", app: Firebase.app("app_name"));
   /// FirebaseUrl("https://firebasestorage.googleapis.com/b/bucket/o/logo.jpg", app: Firebase.app("app_name"));
-  ///
   /// ```
   final FirebaseUrl firebaseUrl;
 
@@ -53,9 +48,7 @@ class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
   ///
   /// You can control how file gets fetched and cached by passing [options].
   ///
-  /// ex:
-  ///
-  /// ```
+  /// ```dart
   /// Image(
   ///   image: FirebaseImageProvider(
   ///     FirebaseUrl("gs://your_bucket/your_image.jpg"),
