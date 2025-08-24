@@ -1,3 +1,10 @@
+## 0.9.0
+
+- Feat: Added support for the web. (Disabled by default)
+- Feat: Added `FirebaseCacheManagerConfig.webSupport` field for toggling web support.
+- Docs: Updated readme with web support instructions.
+- Refactor: dart version constraint updated to >=3.0.0 <4.0.0
+
 ## 0.8.0
 
 - Refactor: updated firebase_core and firebase_storage version constraints (#25)
