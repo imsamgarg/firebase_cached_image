@@ -111,8 +111,12 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   }
 
   @override
-  Future<bool> isCached(FirebaseUrl firebaseUrl) async {
-    return (await _webDbCacheManager.get(firebaseUrl.uniqueId)) != null;
+  Future<bool> isCached(FirebaseUrl firebaseUrl) {
+    if (!FirebaseCacheManagerConfig.webSupport) {
+      return Future.value(false);
+    }
+
+    return _webDbCacheManager.exists(firebaseUrl.uniqueId);
   }
 
   @override

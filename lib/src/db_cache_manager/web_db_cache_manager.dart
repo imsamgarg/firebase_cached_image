@@ -48,6 +48,13 @@ class WebDbCacheManager {
     return complete.future;
   }
 
+  // TODO: Find a better way to check if exists
+  Future<bool> exists(String id) async {
+    final obj = await get(id);
+
+    return obj != null && obj.rawData != null;
+  }
+
   Future<CachedObject?> get(String id) async {
     final complete = Completer<CachedObject?>();
 
