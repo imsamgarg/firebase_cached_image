@@ -7,7 +7,6 @@ import 'package:firebase_cached_image/src/firebase_cache_manager/base_firebase_c
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 /// Fetch, cache and return ImageProvider for Cloud Storage Image Objects.
 class FirebaseImageProvider extends ImageProvider<FirebaseImageProvider> {
