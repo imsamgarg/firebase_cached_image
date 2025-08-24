@@ -1,4 +1,5 @@
 export 'package:firebase_cached_image/src/core/cache_options.dart';
+export 'package:firebase_cached_image/src/core/firebase_cache_manager_config.dart';
 export 'package:firebase_cached_image/src/core/firebase_url.dart';
 export 'package:firebase_cached_image/src/core/image_not_found_exception.dart';
 export 'package:firebase_cached_image/src/core/source.dart';

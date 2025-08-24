@@ -10,12 +10,22 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   FirebaseCacheManager({super.subDir});
 
   @override
-  Future<void> clearCache({Duration? modifiedBefore}) =>
-      _webDbCacheManager.clear(subDir: subDir);
+  Future<void> clearCache({Duration? modifiedBefore}) {
+    if (!FirebaseCacheManagerConfig.webSupport) {
+      return Future.value();
+    }
+
+    return _webDbCacheManager.clear(subDir: subDir);
+  }
 
   @override
-  Future<void> delete(FirebaseUrl firebaseUrl) =>
-      _webDbCacheManager.delete(firebaseUrl.uniqueId);
+  Future<void> delete(FirebaseUrl firebaseUrl) {
+    if (!FirebaseCacheManagerConfig.webSupport) {
+      return Future.value();
+    }
+
+    return _webDbCacheManager.delete(firebaseUrl.uniqueId);
+  }
 
   @override
   Future<String> getSingleFile(
@@ -27,14 +37,30 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
   }
 
   @override
-  Future<void> preCacheFile(FirebaseUrl firebaseUrl) =>
-      _fetchFromServer(firebaseUrl).then((value) => _saveToCache(value));
+  Future<void> preCacheFile(FirebaseUrl firebaseUrl) async {
+    if (!FirebaseCacheManagerConfig.webSupport) {
+      return Future.value();
+    }
+
+    final cachedObject = await _webDbCacheManager.get(firebaseUrl.uniqueId);
+    if (cachedObject != null && cachedObject.rawData != null) {
+      return;
+    }
+
+    await _fetchFromServerAndCache(firebaseUrl);
+  }
 
   @override
-  Future<void> refreshCachedFile(FirebaseUrl firebaseUrl) => _refreshFile(
-        const CacheOptions(checkIfFileUpdatedOnServer: true),
-        firebaseUrl,
-      ).then((value) => _saveToCache(value));
+  Future<void> refreshCachedFile(FirebaseUrl firebaseUrl) {
+    if (!FirebaseCacheManagerConfig.webSupport) {
+      return Future.value();
+    }
+
+    return _refreshFile(
+      const CacheOptions(checkIfFileUpdatedOnServer: true),
+      firebaseUrl,
+    ).then((value) => _saveToCache(value));
+  }
 
   @override
   Future<CachedObject> getSingleObject(
@@ -42,6 +68,10 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
     CacheOptions options = const CacheOptions(),
     int maxSize = 10485760,
   }) async {
+    if (!FirebaseCacheManagerConfig.webSupport) {
+      return _fetchFromServer(firebaseUrl, maxSize);
+    }
+
     switch (options.source) {
       case Source.server:
         return _fetchFromServer(firebaseUrl, maxSize);
