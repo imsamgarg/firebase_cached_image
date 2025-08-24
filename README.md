@@ -6,13 +6,21 @@ Cache Manager and Cached ImageProvider for Firebase Cloud Storage Objects.
 
 Setup firebase (https://firebase.google.com/docs/flutter/setup).
 
-## Note
+## Web Support
 
-No support for caching in web, everything will be downloaded from server.
+Web support is experimental. To enable it, add the following line in your main() function:
+
+```dart
+FirebaseCacheManagerConfig.webSupport = true;
+```
+
+On the web, It uses `indexed_db` for caching the files. All the files are directly saved to the browser's IndexedDB store. Read more about IndexedDB here (https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API).
+
+# Usage
 
 ## Firebase Image Provider
 
-If you want to show image from your cloud storage then pass `FirebaseImageProvider` as `ImageProvider` to `Image` Widget. In `FirebaseImageProvider` pass `FirebaseUrl`.
+To display an image from Firebase Cloud Storage, use FirebaseImageProvider as the ImageProvider for the Flutter Image widget.
 
 ```dart
 Image(
@@ -22,7 +30,6 @@ Image(
 ),
 ```
 
-
 You can declare `FirebaseUrl` in following ways:
 
 ```dart
@@ -31,84 +38,77 @@ FirebaseUrl("https://firebasestorage.googleapis.com/b/bucket/o/logo.jpg")
 FirebaseUrl.fromReference(FirebaseStorage.instance.ref("images/image.jpg"));
 ```
 
-You can alter default caching behaviour by passing `CacheOptions` to provider.
+## Cache Options
+
+Customize caching behavior with `CacheOptions`:
 
 ```dart
 Image(
   image: FirebaseImageProvider(
     FirebaseUrl("gs://bucket_f233/logo.jpg"),
     options: CacheOptions(
-      // Source from image will be fetched
-      //
-      // Default [Source.cacheServer]
-      source: Source.server,
+      checkIfFileUpdatedOnServer: false,
+      source: Source.cacheServer,
     ),
-    errorBuilder: (context, error, stackTrace) {
-      // [ImageNotFoundException] will be thrown if image does not exist on server.
-      if (error is ImageNotFoundException) {
-        return const Text('Image not found on Cloud Storage.');
-      } else {
-        return Text('Error loading image: $error');
-      }
-    },
-    // The loading progress may not be accurate as Firebase Storage API
-    // does not provide a stream of bytes downloaded. The progress updates only at the start and end of the loading process.
-    loadingBuilder: (_, Widget child, ImageChunkEvent? loadingProgress) {
-      if (loadingProgress == null) {
-        // Show the loaded image if loading is complete.
-        return child;
-      } else {
-        return CircularProgressIndicator();
-      }
-    },
   ),
 ),
 ```
 
-By default it will first try to fetch the image from cache, if image exists then it will be returned otherwise image will be fetched from server and then cached.
-
-If you want to always fetch latest image from server then pass `Source.server` to `CacheOptions.source`.
-
-```dart
+- **Default behavior**: Load from cache if available; otherwise fetch from server and then cache.  
+- **Always fetch latest from server**:  
+  ```dart
   source: Source.server,
-```
-
-If you want to fetch image from server only if it is updated after last fetched then set `checkIfFileUpdatedOnServer` to `false`.
-
-```dart
+  ```
+- **Fetch from server only if updated since last fetch**:  
+  ```dart
   checkIfFileUpdatedOnServer: true,
-```
+  ```
 
-Image updation is checked by fetching image's metadata (modified timestamp) from server then comparing to cached image's metadata (modified timestamp).
-
-Note: Metadata retrieval is a Class B operation in google cloud storage. you will be charged for that. Check pricing here (https://cloud.google.com/storage/pricing#price-tables) .Google does offer 50,000 free Class B operations per month.
-
+> **Note:** Image update checks require fetching metadata (last modified timestamp) from Firebase Storage.  
+This is a **Class B operation** in Google Cloud Storage, which may incur charges after 50,000 free operations per month. [Pricing details](https://cloud.google.com/storage/pricing#price-tables).
 ---
+
 
 ## Firebase Cache Manager
 
-if you want to work with any type of cloud storage file and want more functionality then use `FirebaseCacheManager`.
+For more control and support beyond images (e.g., docs, videos), use `FirebaseCacheManager`.
 
-Download and cache any file.
+### Download and Cache a File
+
+_Not supported on web._
 
 ```dart
 final file = await FirebaseCacheManager().getSingleFile(
   FirebaseUrl("gs://bucket_f233/doc.docx"),
 );
-print(file); // Cached file's path, can be used for sharing file
+print(file); // Local cached file path (useful for sharing/reading)
 ```
 
-Download and cache file before use. Can be useful for caching frequently used image at app's load time.
+You can also use `getSingleObject` method to get the file as bytes:
+
+_Supported on web._
+
+```dart
+final cachedObject = await FirebaseCacheManager().getSingleObject(
+  FirebaseUrl("gs://bucket_f233/doc.docx"),
+);
+
+print(cachedObject.rawBytes); // Uint8List of file bytes
+```
+
+### Pre-cache a File
+
+Pre-download files you know will be needed soon (e.g., profile pictures at app start):
 
 ```dart
 await FirebaseCacheManager().preCache(
   FirebaseUrl("gs://bucket_f233/profile_pic.jpg"),
-)
+);
 ```
 
-Refresh already cached file..
+### Refresh a Cached File
 
-Checks if the file has been updated in server, then download the file if it has been updated and saves it to cache.
+Update a cached file if it has changed on the server:
 
 ```dart
 await FirebaseCacheManager().refreshCachedFile(
@@ -116,21 +116,20 @@ await FirebaseCacheManager().refreshCachedFile(
 );
 ```
 
-Copy file to cache
+### Copy a Local File to Cache
 
-
-To manually copy file to cache, use this method. To avoid downloading the file again. It will copy the file from [filePath] to cache and return the cached file path.
-
+Avoid re-downloading by copying an existing local file into the cache.  
+_Not supported on web._
 
 ```dart
 final filePath = "/storage/file.jpg";
 final cachedFilePath = await FirebaseCacheManager().copyToCache(
   FirebaseUrl("gs://bucket_f233/profile_pic.jpg"),
   filePath,
-)
+);
 ```
 
-Delete specific file from cache.
+### Delete a Cached File
 
 ```dart
 await FirebaseCacheManager().delete(
@@ -138,29 +137,43 @@ await FirebaseCacheManager().delete(
 );
 ```
 
-Clear all the cache.
+### Clear Cache
 
 ```dart
+// Clear entire cache (Supported on web)
 await FirebaseCacheManager().clearCache();
 
-// Delete files older than 20 days
+// Clear files older than 20 days (Not supported on web)
 await FirebaseCacheManager().clearCache(modifiedBefore: Duration(days: 20));
 ```
 
-Use custom sub-directory to save files in desired directory in system's temporary directory. Default is "flutter_cached_image"
+### Custom Sub-Directory
+
+Save cached files in a custom subdirectory inside the system’s temporary directory.  
+_Default:_ `"flutter_cached_image"`
 
 ```dart
-final manager = FirbaseCacheManager(subDir: "profile_pictures");
+final manager = FirebaseCacheManager(subDir: "profile_pictures");
 ```
 
-Also helpful in saving files in multiple folders
+This allows organizing cached files by category:
 
 ```dart
-final profilePicturesCacheManager = FirbaseCacheManager(subDir: "profile_pictures");
-final postsCacheManager = FirbaseCacheManager(subDir: "posts");
+final profilePicturesCacheManager = FirebaseCacheManager(subDir: "profile_pictures");
+final postsCacheManager = FirebaseCacheManager(subDir: "posts");
 
-// Only delete files in posts directory
-await postsCacheManger.clearCache();
-
+// Clear only "posts" cache
+await postsCacheManager.clearCache();
 ```
 
+### Platform Support
+
+| Method                       | Mobile       | Web              |
+| ---------------------------- | ------------ | ---------------- |
+| `getSingleFile()`            | ✅ Supported | ✅ Supported     |
+| `preCache()`                 | ✅ Supported | ✅ Supported     |
+| `refreshCachedFile()`        | ✅ Supported | ✅ Supported     |
+| `copyToCache()`              | ✅ Supported | ❌ Not Supported |
+| `delete()`                   | ✅ Supported | ✅ Supported     |
+| `clearCache()` (all files)   | ✅ Supported | ✅ Supported     |
+| `clearCache(modifiedBefore)` | ✅ Supported | ❌ Not Supported |
