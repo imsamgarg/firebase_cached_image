@@ -56,12 +56,12 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
 
     if (image != null) {
       if (file.existsSync()) {
-        if (options.maxAge != null) {
-          if (image.maxAge != null) {
+        if (options.cacheTime != null) {
+          if (image.cacheTime != null) {
             final now = DateTime.now();
             final maxDate =
                 DateTime.fromMillisecondsSinceEpoch(image.modifiedAt)
-                    .add(image.maxAge!);
+                    .add(image.cacheTime!);
 
             if (now.isBefore(maxDate)) {
               return image.copyWith(rawData: await file.readAsBytes());
@@ -89,7 +89,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       url: firebaseUrl.url.toString(),
       rawData: bytes,
       fullLocalPath: file.path,
-      maxAge: options.maxAge,
+      cacheTime: options.cacheTime,
       modifiedAt: getNowTimeFunc().millisecondsSinceEpoch,
     );
 
@@ -120,7 +120,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       return downloadToCache(firebaseUrl);
     }
 
-    // TODO: handle options.maxAge
+    // TODO: handle options.cacheTime
 
     /// Refresh cache file in background
     if (options.checkIfFileUpdatedOnServer) {

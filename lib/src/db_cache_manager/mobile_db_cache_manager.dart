@@ -26,7 +26,7 @@ class MobileDbCacheManager {
       onCreate: createDb,
       onUpgrade: upgradeDb,
       // 1. Initial version
-      // 2. Added 'maxAge' number field
+      // 2. Added 'cacheTime' number field
       version: 2,
     );
   }
@@ -106,7 +106,7 @@ class MobileDbCacheManager {
       fullLocalPath TEXT,
       uri TEXT,
       modifiedAt INTEGER,
-      maxAge INTEGER
+      cacheTime INTEGER
     )
     ''',
     );
@@ -131,7 +131,7 @@ ON $tableName (id);
   static Future<void> upgradeDb(Database db, int oldV, int newV) async {
     if (oldV < 2) {
       await db.execute("""
-ALTER TABLE $tableName ADD COLUMN maxAge INTEGER;
+ALTER TABLE $tableName ADD COLUMN cacheTime INTEGER;
       """);
     }
   }
