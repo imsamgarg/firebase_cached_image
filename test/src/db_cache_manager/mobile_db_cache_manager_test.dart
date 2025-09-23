@@ -66,6 +66,7 @@ void main() {
     expect(cachedFile.id, getUniqueId(url));
     expect(cachedFile.rawData, null);
   });
+
   test("cache-miss", () async {
     const String fileName = "fileName";
     final url = _getTempUrl(fileName);
@@ -367,6 +368,31 @@ void main() {
     });
 
     //* Test when there are no objects with the given subDir value
+  });
+
+  test("return cacheTime value properly", () async {
+    const String fileName = "fileName";
+    const cacheTime = Duration(minutes: 10);
+    final modifiedAt = DateTime.now().millisecondsSinceEpoch;
+    final _dbCachedObject = await putTempCachedObject(
+      fileName,
+      modifiedAt: modifiedAt,
+      localPath: "some/local/path",
+    );
+
+    // Update the object with cacheTime value
+    final updatedObject = await manager.put(
+      _dbCachedObject.copyWith(cacheTime: cacheTime),
+    );
+
+    final CachedObject? cachedFile = await manager.get(_dbCachedObject.id);
+
+    expect(cachedFile != null, true);
+    expect(cachedFile, updatedObject);
+    expect(cachedFile!.cacheTime, cacheTime);
+    expect(cachedFile.modifiedAt, modifiedAt);
+    expect(cachedFile.fullLocalPath, "some/local/path");
+    expect(cachedFile.rawData, null);
   });
 
   tearDownAll(() => db.close());

@@ -17,6 +17,14 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../cloud_storage_manager/cloud_storage_manager_test.mocks.dart';
 import 'mobile_firebase_cache_manager_test.mocks.dart';
 
+MockFirebaseUrl _getRandomUrl() {
+  final ref = MockFirebaseUrl();
+  when(ref.uniqueId)
+      .thenReturn(DateTime.now().millisecondsSinceEpoch.toString());
+  when(ref.url).thenReturn(Uri.parse("www.google.com/${ref.uniqueId}"));
+  return ref;
+}
+
 @GenerateMocks([NativeCloudStorageManager])
 void main() {
   late Database db;
@@ -820,6 +828,129 @@ void main() {
       expect(isCached1AfterClear, isFalse);
       expect(isCached2AfterClear, isTrue);
       expect(isCached3AfterClear, isTrue);
+    });
+  });
+
+  group("CacheTime", () {
+    test("when cacheTime is not provided it should not expire the cache",
+        () async {
+      final url = _getRandomUrl();
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
+
+      when(cloudStorageManager.downloadLatestFile(url)).thenAnswer(
+        (_) async => bytes,
+      );
+
+      await cacheManager.getSingleObject(url);
+      verify(cloudStorageManager.downloadLatestFile(url)).called(1);
+
+      await cacheManager.getSingleObject(url);
+      verifyNever(cloudStorageManager.downloadLatestFile(url));
+
+      cacheManager.getNowTimeFunc =
+          () => DateTime.now().add(const Duration(days: 1));
+
+      await cacheManager.getSingleObject(url);
+
+      // INFO: It must not be called again because the cache never expires
+      verifyNever(cloudStorageManager.downloadLatestFile(url));
+    });
+
+    test(
+        "when cacheTime is provided it should be used to determine the cache validity",
+        () async {
+      final url = _getRandomUrl();
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
+
+      when(cloudStorageManager.downloadLatestFile(url)).thenAnswer(
+        (_) async => bytes,
+      );
+
+      final nowTime = DateTime.now();
+      manager.getNowTimeFunc = () => nowTime;
+      cacheManager.getNowTimeFunc = () => nowTime;
+
+      const cacheTime = Duration(seconds: 2);
+      await cacheManager.getSingleObject(
+        url,
+        options: const CacheOptions(
+          cacheTime: cacheTime,
+        ),
+      );
+
+      await cacheManager.getSingleObject(
+        url,
+        options: const CacheOptions(
+          cacheTime: cacheTime,
+        ),
+      );
+
+      // INFO: It must be called only once because the cache is still valid
+      verify(cloudStorageManager.downloadLatestFile(url)).called(1);
+
+      cacheManager.getNowTimeFunc =
+          () => nowTime.add(const Duration(seconds: 3));
+      manager.getNowTimeFunc = () => nowTime.add(const Duration(seconds: 3));
+
+      await cacheManager.getSingleObject(
+        url,
+        options: const CacheOptions(
+          cacheTime: cacheTime,
+        ),
+      );
+
+      // INFO: It must be called again because the cache has expired
+      verify(cloudStorageManager.downloadLatestFile(url)).called(1);
+    });
+
+    test(
+        "when cacheTime and checkIfFileUpdatedOnServer are provided, It must ignore the later",
+        () async {
+      final url = _getRandomUrl();
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
+
+      when(cloudStorageManager.downloadLatestFile(url)).thenAnswer(
+        (_) async => bytes,
+      );
+
+      final nowTime = DateTime.now();
+      manager.getNowTimeFunc = () => nowTime;
+      cacheManager.getNowTimeFunc = () => nowTime;
+
+      const cacheTime = Duration(seconds: 2);
+      await cacheManager.getSingleObject(
+        url,
+        options: const CacheOptions(
+          cacheTime: cacheTime,
+          checkForMetadataChange: true,
+        ),
+      );
+
+      verifyNever(cloudStorageManager.isUpdated(url, any));
+
+      await cacheManager.getSingleObject(
+        url,
+        options: const CacheOptions(
+          cacheTime: cacheTime,
+          checkForMetadataChange: true,
+        ),
+      );
+
+      verifyNever(cloudStorageManager.isUpdated(url, any));
+
+      cacheManager.getNowTimeFunc =
+          () => nowTime.add(const Duration(seconds: 3));
+      manager.getNowTimeFunc = () => nowTime.add(const Duration(seconds: 3));
+
+      await cacheManager.getSingleObject(
+        url,
+        options: const CacheOptions(
+          cacheTime: cacheTime,
+          checkForMetadataChange: true,
+        ),
+      );
+
+      verifyNever(cloudStorageManager.isUpdated(url, any));
     });
   });
 

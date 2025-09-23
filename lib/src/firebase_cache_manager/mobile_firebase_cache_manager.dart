@@ -58,7 +58,7 @@ class FirebaseCacheManager extends BaseFirebaseCacheManager {
       if (file.existsSync()) {
         if (options.cacheTime != null) {
           if (image.cacheTime != null) {
-            final now = DateTime.now();
+            final now = getNowTimeFunc();
             final maxDate =
                 DateTime.fromMillisecondsSinceEpoch(image.modifiedAt)
                     .add(image.cacheTime!);
