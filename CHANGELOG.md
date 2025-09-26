@@ -1,3 +1,7 @@
+## 0.10.0
+
+- Feat: Added support for cacheTime in CacheOptions.
+
 ## 0.9.0
 
 - Feat: Added support for the web. (Disabled by default)
