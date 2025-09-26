@@ -25,7 +25,9 @@ To display an image from Firebase Cloud Storage, use FirebaseImageProvider as th
 ```dart
 Image(
   image: FirebaseImageProvider(
-    FirebaseUrl("gs://bucket_f233/logo.jpg")
+    FirebaseUrl("gs://bucket_f233/logo.jpg"),
+    // Optional: Display this image if the main image not found on the server
+    fallbackUrl: FirebaseUrl("gs://bucket/sad-image.jpg"),
   ),
 ),
 ```
@@ -55,6 +57,10 @@ Image(
 ```
 
 - **Default behavior**: Load from cache if available; otherwise fetch from server and then cache.  
+- **Cache for specified duration**: Load from cache if not older than duration; otherwise fetch from server and update cache.
+  ```dart
+  cacheTime: Duration(days: 7),
+  ```
 - **Always fetch latest from server**:  
   ```dart
   source: Source.server,
