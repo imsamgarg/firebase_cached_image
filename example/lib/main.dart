@@ -42,9 +42,8 @@ class _MyHomePageState extends State<MyHomePage> {
             FirebaseUrl("gs://your_bucket/your_image.jpg"),
             // Specify CacheOptions to control file fetching and caching behavior.
             options: const CacheOptions(
-              // Always fetch the latest file from the server and do not cache the file.
-              // default is Source.cacheServer which will fetch try to fetch the image from the cache and then hit server if the image not found in the cache.
-              source: Source.server,
+              // Source.cacheServer which will fetch try to fetch the image from the cache and then hit server if the image not found in the cache.
+              source: Source.cacheServer,
               // Check if the image is updated on the server or not, if updated then download the latest image otherwise use the cached image.
               // Will only be used if the options.source is Source.cacheServer
               checkIfFileUpdatedOnServer: true,
@@ -52,6 +51,15 @@ class _MyHomePageState extends State<MyHomePage> {
             // Use this to save files in desired directory in system's temporary directory
             // Optional. default is "flutter_cached_image"
             subDir: "custom_cache_directory",
+            // You can provide a fallback image which will be used if the main image is not found on the server.
+            fallbackUrl:
+                FirebaseUrl("gs://your_bucket/your_fallback_image.jpg"),
+            // Specify CacheOptions for the fallback image.
+            fallbackOptions: const CacheOptions(
+              source: Source.cacheServer,
+              // Cache the fallback image for 30 days.
+              cacheTime: Duration(days: 30),
+            ),
           ),
           errorBuilder: (context, error, stackTrace) {
             // [ImageNotFoundException] will be thrown if image does not exist on server.
