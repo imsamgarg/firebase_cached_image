@@ -952,6 +952,67 @@ void main() {
 
       verifyNever(cloudStorageManager.isUpdated(url, any));
     });
+
+    test("after first refetch the cacheTime should be reset", () async {
+      final url = _getRandomUrl();
+      final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
+
+      when(cloudStorageManager.downloadLatestFile(url)).thenAnswer(
+        (_) async => bytes,
+      );
+
+      final nowTime = DateTime.now();
+      manager.getNowTimeFunc = () => nowTime;
+      cacheManager.getNowTimeFunc = () => nowTime;
+
+      const cacheTime = Duration(seconds: 2);
+      await cacheManager.getSingleObject(
+        url,
+        options: const CacheOptions(
+          cacheTime: cacheTime,
+        ),
+      );
+
+      await cacheManager.getSingleObject(
+        url,
+        options: const CacheOptions(
+          cacheTime: cacheTime,
+        ),
+      );
+
+      // INFO: It must be called only once because the cache is still valid
+      verify(cloudStorageManager.downloadLatestFile(url)).called(1);
+
+      cacheManager.getNowTimeFunc =
+          () => nowTime.add(const Duration(seconds: 3));
+      manager.getNowTimeFunc = () => nowTime.add(const Duration(seconds: 3));
+
+      await cacheManager.getSingleObject(
+        url,
+        options: const CacheOptions(
+          cacheTime: cacheTime,
+        ),
+      );
+
+      // INFO: It must be called again because the cache has expired
+      verify(cloudStorageManager.downloadLatestFile(url)).called(1);
+
+      // Now the cache time should be reset
+
+      cacheManager.getNowTimeFunc =
+          () => nowTime.add(const Duration(seconds: 4));
+      manager.getNowTimeFunc = () => nowTime.add(const Duration(seconds: 4));
+
+      await cacheManager.getSingleObject(
+        url,
+        options: const CacheOptions(
+          cacheTime: cacheTime,
+        ),
+      );
+
+      // INFO: It must not be called again because the cache time should be reset after first refresh
+      verifyNever(cloudStorageManager.downloadLatestFile(url));
+    });
   });
 
   tearDown(() async {
