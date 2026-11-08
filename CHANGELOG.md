@@ -1,3 +1,7 @@
+## 0.10.1
+
+- Chore: Added support for firebase_core 5.x and firebase_storage 14.x.
+
 ## 0.10.0
 
 - Feat: Added support for cacheTime in CacheOptions.
